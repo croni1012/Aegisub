@@ -111,6 +111,9 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 , c(context)
 , undo_timer(GetEventHandler())
 {
+#ifdef WITH_WXSTC
+	use_stc = OPT_GET("Subtitle/Use STC")->GetBool();
+#endif
 	using std::bind;
 
 	// Top controls
@@ -252,7 +255,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 
 	main_sizer->Add(secondary_editor,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 	main_sizer->Add(souceline_editor,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
-	main_sizer->Add(edit_ctrl,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 	main_sizer->Hide(secondary_editor);
 	main_sizer->Hide(souceline_editor);
 
@@ -285,8 +287,11 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 		context->initialLineState->AddChangeListener(&SubsEditBox::OnLineInitialTextChanged, this),
 	 });
 
-	context->textSelectionController->SetControl(edit_ctrl);
-	edit_ctrl->SetFocus();
+	if (use_stc && edit_ctrl_stc) {
+		edit_ctrl_stc->SetFocus();
+	} else if (edit_ctrl_tc) {
+		edit_ctrl_tc->SetFocus();
+	}
 
 	bool show_original = OPT_GET("Subtitle/Show Original")->GetBool();
 	if (show_original) {

@@ -210,7 +210,7 @@ class SubsEditBox final : public wxPanel {
 	void OnChangeTc(wxCommandEvent& event);
 
 #ifdef WITH_WXSTC
-	bool use_stc = OPT_GET("Subtitle/Use STC")->GetBool();
+	bool use_stc = false;
 #endif
 
 	wxTextCtrl *secondary_editor;
