@@ -99,7 +99,6 @@ SubsStyledTextEditCtrl::SubsStyledTextEditCtrl(wxWindow* parent, wxSize wsize, l
 , thesaurus(std::make_unique<Thesaurus>())
 , context(context)
 {
-	osx::ime::inject(this);
 
 	// Set properties
 	SetWrapMode(wxSTC_WRAP_WORD);
@@ -145,7 +144,7 @@ SubsStyledTextEditCtrl::SubsStyledTextEditCtrl(wxWindow* parent, wxSize wsize, l
 	Bind(wxEVT_MENU, &SubsStyledTextEditCtrl::OnToggleRTL, this, EDIT_MENU_RTL);
 	Bind(wxEVT_IDLE, std::bind(&SubsStyledTextEditCtrl::UpdateCallTip, this));
 	Bind(wxEVT_STC_DOUBLECLICK, &SubsStyledTextEditCtrl::OnDoubleClick, this);
-	Bind(wxEVT_STC_STYLENEEDED, [=](wxStyledTextEvent&) {
+	Bind(wxEVT_STC_STYLENEEDED, [this](wxStyledTextEvent&) {
 		{
 			std::string text = GetTextRaw().data();
 			if (text == line_text) return;
@@ -183,13 +182,13 @@ SubsStyledTextEditCtrl::SubsStyledTextEditCtrl(wxWindow* parent, wxSize wsize, l
 		Refresh();
 	});
 
-	Bind(wxEVT_MENU, [=](wxCommandEvent&) {
+	Bind(wxEVT_MENU, [this](wxCommandEvent&) {
 		if (spellchecker) spellchecker->AddWord(currentWord);
 		UpdateStyle();
 		SetFocus();
 	}, EDIT_MENU_ADD_TO_DICT);
 
-	Bind(wxEVT_MENU, [=](wxCommandEvent&) {
+	Bind(wxEVT_MENU, [this](wxCommandEvent&) {
 		if (spellchecker) spellchecker->RemoveWord(currentWord);
 		UpdateStyle();
 		SetFocus();
@@ -220,8 +219,6 @@ void SubsStyledTextEditCtrl::OnLoseFocus(wxFocusEvent &event) {
 }
 
 void SubsStyledTextEditCtrl::OnKeyDown(wxKeyEvent &event) {
-	if (osx::ime::process_key_event(this, event)) return;
-
 	// Handle Shift+Return for soft line breaks (ASS newline)
 	if (event.GetKeyCode() == WXK_RETURN && event.GetModifiers() == wxMOD_SHIFT) {
 		auto sel_start = GetSelectionStart(), sel_end = GetSelectionEnd();
@@ -365,14 +362,13 @@ void SubsStyledTextEditCtrl::UpdateCallTip() {
 }
 
 void SubsStyledTextEditCtrl::SetTextTo(std::string const& text) {
-	osx::ime::invalidate(this);
 	SetEvtHandlerEnabled(false);
 	Freeze();
 
 	auto insertion_point = GetInsertionPoint();
 	if (static_cast<size_t>(insertion_point) > line_text.size())
 		line_text = GetTextRaw().data();
-	auto old_pos = agi::CharacterCount(line_text.begin(), line_text.begin() + insertion_point, 0);
+	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
 	line_text.clear();
 
 	if (context) {
