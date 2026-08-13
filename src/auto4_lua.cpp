@@ -384,7 +384,8 @@ namespace {
 
 	int is_editbox_active(lua_State *L)
 	{
-		push_value(L, get_context(L)->textSelectionController->GetControl()->GetSTCFocus());
+		auto *ctrl = get_context(L)->textSelectionController->GetControl();
+		push_value(L, ctrl && ctrl->GetSTCFocus());
 		return 1;
 	}
 

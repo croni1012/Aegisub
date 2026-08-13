@@ -16,8 +16,10 @@
 
 #include <libaegisub/signal.h>
 
-class wxStyledTextCtrl;
-class wxTextCtrl;
+#include <wx/stc/stc.h>
+#include <wx/textctrl.h>
+
+class wxStyledTextEvent;
 class wxEvent;
 
 class TextSelectionController {
@@ -61,6 +63,9 @@ public:
 	long GetStagedSelectionStart() const { return has_staged_selection ? staged_selection_start : selection_start; }
 	long GetStagedSelectionEnd() const { return has_staged_selection ? staged_selection_end : selection_end; }
 	long GetStagedInsertionPoint() const { return has_staged_selection ? staged_selection_end : insertion_point; }
+
+	wxStyledTextCtrl *GetControl() const { return ctrl_stc; }
+	wxTextCtrl *GetTextControl() const { return ctrl_te; }
 
 	void SetControl(wxStyledTextCtrl* ctrl);
 	void SetControl(wxTextCtrl* ctrl);
