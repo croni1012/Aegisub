@@ -62,8 +62,20 @@
     "main/typesetting" : [
         { "submenu" : "main/typesetting/transform", "text" : "&Transform" },
         { "command" : "typesetting/gradient" },
-		{ "command" : "typesetting/textbox" }
-    ],
+		{ "command" : "typesetting/textbox" },
+		{},
+		{ "submenu" : "main/typesetting/floating", "text" : "&Floating windows" }
+	],
+	"main/typesetting/floating" : [
+		{ "command" : "typesetting/floating/all" },
+		{},
+		{ "command" : "typesetting/floating/basic" },
+		{ "command" : "typesetting/floating/border-shadow" },
+		{ "command" : "typesetting/floating/font" },
+		{ "command" : "typesetting/floating/alignment" },
+		{ "command" : "typesetting/floating/transform" },
+		{ "command" : "typesetting/floating/delete" }
+	],
     "main/typesetting/transform" : [
         { "command" : "typesetting/transform/free" },
         { "command" : "typesetting/transform/distort" },

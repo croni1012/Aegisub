@@ -47,6 +47,7 @@
 #include "command/command.h"
 #include "dialog_detached_video.h"
 #include "dialog_manager.h"
+#include "floating_tag_windows.h"
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "options.h"
@@ -146,6 +147,7 @@ FrameMain::FrameMain()
 
 	StartupLog("Create views and inner main window controls");
 	InitContents();
+	floating_tag_windows = std::make_unique<FloatingTagWindowManager>(this, context.get());
 	OPT_SUB("Video/Detached/Enabled", &FrameMain::OnVideoDetach, this);
 
 	StartupLog("Set up drag/drop target");
@@ -166,6 +168,7 @@ FrameMain::~FrameMain () {
 	context->project->CloseAudio();
 	context->project->CloseVideo();
 
+	floating_tag_windows.reset();
 	DestroyChildren();
 }
 
@@ -216,6 +219,18 @@ void FrameMain::InitContents() {
 	StartupLog("Perform layout");
 	Layout();
 	StartupLog("Leaving InitContents");
+}
+
+void FrameMain::ToggleFloatingTagWindow(FloatingTagWindow window) {
+	if (floating_tag_windows) floating_tag_windows->Toggle(window);
+}
+
+void FrameMain::ShowAllFloatingTagWindows() {
+	if (floating_tag_windows) floating_tag_windows->ShowAll();
+}
+
+bool FrameMain::IsFloatingTagWindowShown(FloatingTagWindow window) const {
+	return floating_tag_windows && floating_tag_windows->IsShown(window);
 }
 
 void FrameMain::SetDisplayMode(int video, int audio) {
@@ -328,6 +343,7 @@ void FrameMain::OnCloseWindow(wxCloseEvent &event) {
 
 	// Store maximization state
 	OPT_SET("App/Maximized")->SetBool(IsMaximized());
+	if (floating_tag_windows) floating_tag_windows->SaveLayout();
 
 	Destroy();
 }

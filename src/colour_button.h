@@ -43,6 +43,8 @@ public:
 
 	/// Get the currently selected color
 	agi::Color GetColor() { return colour; }
+	/// Set the displayed color without opening the picker or emitting EVT_COLOR
+	void SetColor(agi::Color color);
 };
 
 struct ColorValidator final : public wxValidator {

@@ -8946,3 +8946,106 @@ msgstr ""
 #, c-format
 msgid "Gradient (%d lines, %s, text: %s)"
 msgstr "Gradient (%d sor, %s, szöveg: %s)"
+#: ../src/libresrc/default_menu_platform.json
+msgid "&Floating windows"
+msgstr "&Lebegő ablakok"
+
+#: ../src/command/typesetting.cpp
+msgid "All"
+msgstr "Összes"
+
+#: ../src/command/typesetting.cpp
+msgid "Show all floating tag windows in one group"
+msgstr "Az összes lebegő tagablak megjelenítése egy csoportban"
+
+#: ../src/command/typesetting.cpp ../src/floating_tag_windows.cpp
+msgid "Basic"
+msgstr "Alap"
+
+#: ../src/command/typesetting.cpp
+msgid "Bord && Shad"
+msgstr "Bord && Shad"
+
+#: ../src/command/typesetting.cpp ../src/floating_tag_windows.cpp
+msgid "Bord & Shad"
+msgstr "Bord & Shad"
+
+#: ../src/command/typesetting.cpp ../src/floating_tag_windows.cpp
+msgid "Transformation"
+msgstr "Transzformáció"
+
+#: ../src/command/typesetting.cpp ../src/floating_tag_windows.cpp
+msgid "Tag deletion"
+msgstr "Tag törlés"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Fixed value"
+msgstr "Fix érték"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Proportional"
+msgstr "Arányos"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Darken"
+msgstr "Sötétítés"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Lighten"
+msgstr "Világosítás"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Re-position"
+msgstr "Újrapozicionálás"
+
+#: ../src/floating_tag_windows.cpp
+msgid "SCSS-style HSL adjustment in percentage points"
+msgstr "SCSS-szerű HSL-módosítás százalékpontokban"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Multiple values; the active line is shown"
+msgstr "Eltérő értékek; az aktív sor értéke látható"
+
+#: ../src/floating_tag_windows.cpp
+msgid "change floating tag value"
+msgstr "lebegő tagérték módosítása"
+
+#: ../src/floating_tag_windows.cpp
+msgid "change floating tag colour"
+msgstr "lebegő tagszín módosítása"
+
+#: ../src/floating_tag_windows.cpp
+msgid "change subtitle alignment"
+msgstr "felirat rendezésének módosítása"
+
+#: ../src/floating_tag_windows.cpp
+msgid "delete override tag"
+msgstr "felülíró tag törlése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the basic tag window"
+msgstr "Az Alap tagablak megjelenítése vagy elrejtése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the border and shadow tag window"
+msgstr "A Bord és Shad tagablak megjelenítése vagy elrejtése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the font tag window"
+msgstr "A Font tagablak megjelenítése vagy elrejtése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the alignment tag window"
+msgstr "A Rendezés tagablak megjelenítése vagy elrejtése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the transformation tag window"
+msgstr "A Transzformáció tagablak megjelenítése vagy elrejtése"
+
+#: ../src/command/typesetting.cpp
+msgid "Show or hide the tag deletion window"
+msgstr "A Tag törlés ablak megjelenítése vagy elrejtése"
+
+#: ../src/floating_tag_windows.cpp
+msgid "Floating tag windows"
+msgstr "Lebegő tagablakok"

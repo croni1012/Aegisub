@@ -252,17 +252,24 @@ void Interface(wxTreebook *book, Preferences *parent) {
 	auto visual_tools = p->PageSizer(_("Visual Tools"));
 	p->OptionAdd(visual_tools, _("Shape handle size"), "Tool/Visual/Shape Handle Size");
 
+#if defined(__WXMSW__) && wxVERSION_NUMBER >= 3300
+	auto dark_mode = p->PageSizer(_("Dark Mode"));
+	p->OptionAdd(dark_mode, _("Enable experimental dark mode (restart required)"), "App/Dark Mode");
+#endif
+
+	p->SetSizerAndFit(p->sizer);
+}
+
+/// Interface Font Picker preferences subpage
+void Interface_FontPicker(wxTreebook *book, Preferences *parent) {
+	auto p = new OptionPage(book, parent, _("Font Picker"), OptionPage::PAGE_SCROLL|OptionPage::PAGE_SUB);
+
 	auto font_picker = p->PageSizer(_("Font Picker"));
 	p->OptionAddMultiline(font_picker, "Tool/Font Picker/Preview");
 	p->OptionAddMultiline(font_picker, "Tool/Font Picker/Sample");
 
 	auto font_filters = p->PageSizer(_("Font Picker Language Filters"));
 	p->OptionLanguageFilterList(font_filters, "Tool/Font Picker/Language Filters");
-
-#if defined(__WXMSW__) && wxVERSION_NUMBER >= 3300
-	auto dark_mode = p->PageSizer(_("Dark Mode"));
-	p->OptionAdd(dark_mode, _("Enable experimental dark mode (restart required)"), "App/Dark Mode");
-#endif
 
 	p->SetSizerAndFit(p->sizer);
 }
@@ -760,6 +767,7 @@ Preferences::Preferences(wxWindow *parent): wxDialog(parent, -1, _("Preferences"
 	Audio(book, this);
 	Video(book, this);
 	Interface(book, this);
+	Interface_FontPicker(book, this);
 	Interface_Colours(book, this);
 	new Interface_Hotkeys(book, this);
 	Backup(book, this);

@@ -35,6 +35,8 @@ class AegisubApp;
 class AsyncVideoProvider;
 class AudioBox;
 class VideoBox;
+class FloatingTagWindowManager;
+enum class FloatingTagWindow;
 namespace agi { class AudioProvider; }
 namespace agi { struct Context; class OptionValue; }
 
@@ -42,6 +44,7 @@ class FrameMain : public wxFrame {
 	friend class AegisubApp;
 
 	std::unique_ptr<agi::Context> context;
+	std::unique_ptr<FloatingTagWindowManager> floating_tag_windows;
 
     // XXX: Make Freeze()/Thaw() noops on GTK, this seems to be buggy
 #ifdef __WXGTK__
@@ -95,6 +98,10 @@ public:
 	bool IsVideoShown() const { return showVideo; }
 	bool IsAudioShown() const { return showAudio; }
 	bool IsClosing() const { return closing; }
+
+	void ToggleFloatingTagWindow(FloatingTagWindow window);
+	void ShowAllFloatingTagWindows();
+	bool IsFloatingTagWindowShown(FloatingTagWindow window) const;
 
 	DECLARE_EVENT_TABLE()
 };

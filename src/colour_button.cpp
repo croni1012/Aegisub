@@ -47,3 +47,8 @@ void ColourButton::UpdateBitmap() {
 		bgr8_pixel_t(colour.r, colour.g, colour.b));
 	SetBitmapLabel(bmp);
 }
+
+void ColourButton::SetColor(agi::Color color) {
+	colour = color;
+	UpdateBitmap();
+}

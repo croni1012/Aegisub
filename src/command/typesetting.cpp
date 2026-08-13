@@ -26,6 +26,8 @@
 #include "../ass_file.h"
 #include "../compat.h"
 #include "../dialog_gradient.h"
+#include "../floating_tag_windows.h"
+#include "../frame_main.h"
 #include "../subtitle_line_combiner.h"
 #include "../include/aegisub/context.h"
 #include "../selection_controller.h"
@@ -216,6 +218,65 @@ struct typesetting_textbox final : public Command {
 	}
 };
 
+template<FloatingTagWindow Window>
+struct floating_window_command : public Command {
+	CMD_TYPE(COMMAND_TOGGLE)
+
+	bool IsActive(const agi::Context *c) override {
+		return c->frame && c->frame->IsFloatingTagWindowShown(Window);
+	}
+
+	void operator()(agi::Context *c) override {
+		if (c->frame) c->frame->ToggleFloatingTagWindow(Window);
+	}
+};
+
+struct typesetting_floating_basic final : floating_window_command<FloatingTagWindow::Basic> {
+	CMD_NAME("typesetting/floating/basic")
+	STR_MENU("Basic") STR_DISP("Basic")
+	STR_HELP("Show or hide the basic tag window")
+};
+
+struct typesetting_floating_border_shadow final : floating_window_command<FloatingTagWindow::BorderShadow> {
+	CMD_NAME("typesetting/floating/border-shadow")
+	STR_MENU("Bord && Shad") STR_DISP("Bord & Shad")
+	STR_HELP("Show or hide the border and shadow tag window")
+};
+
+struct typesetting_floating_font final : floating_window_command<FloatingTagWindow::Font> {
+	CMD_NAME("typesetting/floating/font")
+	STR_MENU("Font") STR_DISP("Font")
+	STR_HELP("Show or hide the font tag window")
+};
+
+struct typesetting_floating_alignment final : floating_window_command<FloatingTagWindow::Alignment> {
+	CMD_NAME("typesetting/floating/alignment")
+	STR_MENU("Alignment") STR_DISP("Alignment")
+	STR_HELP("Show or hide the alignment tag window")
+};
+
+struct typesetting_floating_transform final : floating_window_command<FloatingTagWindow::Transform> {
+	CMD_NAME("typesetting/floating/transform")
+	STR_MENU("Transformation") STR_DISP("Transformation")
+	STR_HELP("Show or hide the transformation tag window")
+};
+
+struct typesetting_floating_delete final : floating_window_command<FloatingTagWindow::DeleteTags> {
+	CMD_NAME("typesetting/floating/delete")
+	STR_MENU("Tag deletion") STR_DISP("Tag deletion")
+	STR_HELP("Show or hide the tag deletion window")
+};
+
+struct typesetting_floating_all final : public Command {
+	CMD_NAME("typesetting/floating/all")
+	STR_MENU("All") STR_DISP("All")
+	STR_HELP("Show all floating tag windows in one group")
+
+	void operator()(agi::Context *c) override {
+		if (c->frame) c->frame->ShowAllFloatingTagWindows();
+	}
+};
+
 }
 
 namespace cmd {
@@ -228,5 +289,12 @@ namespace cmd {
 		reg(std::make_unique<typesetting_flip_vertical>());
 		reg(std::make_unique<typesetting_gradient>());
 		reg(std::make_unique<typesetting_textbox>());
+		reg(std::make_unique<typesetting_floating_all>());
+		reg(std::make_unique<typesetting_floating_basic>());
+		reg(std::make_unique<typesetting_floating_border_shadow>());
+		reg(std::make_unique<typesetting_floating_font>());
+		reg(std::make_unique<typesetting_floating_alignment>());
+		reg(std::make_unique<typesetting_floating_transform>());
+		reg(std::make_unique<typesetting_floating_delete>());
 	}
 }

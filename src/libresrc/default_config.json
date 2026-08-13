@@ -462,6 +462,9 @@
 	},
 
 	"Tool" : {
+		"Floating Tags" : {
+			"Layout" : ""
+		},
 		"Colour Picker" : {
 			"Mode" : 4,
 			"Recent Colours" : [

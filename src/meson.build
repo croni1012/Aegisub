@@ -101,6 +101,7 @@ aegisub_src = files(
     'export_framerate.cpp',
     'fft.cpp',
     'fold_controller.cpp',
+	'floating_tag_windows.cpp',
     'font_file_lister.cpp',
     'frame_main.cpp',
     'gl_text.cpp',
