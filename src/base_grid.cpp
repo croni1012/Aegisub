@@ -101,6 +101,7 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context)
 	}
 
 	UpdateStyle();
+	SetLayoutDirection(OPT_GET("Subtitle/Grid/RTL Mode")->GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 	OnHighlightVisibleChange(*OPT_GET("Subtitle/Grid/Highlight Subtitles in Frame"));
 
 	connections = agi::signal::make_vector({
@@ -133,6 +134,11 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context)
 
 		OPT_SUB("Subtitle/Grid/Highlight Subtitles in Frame", &BaseGrid::OnHighlightVisibleChange, this),
 		OPT_SUB("Subtitle/Grid/Hide Overrides", [&](agi::OptionValue const&) { Refresh(false); }),
+		OPT_SUB("Subtitle/Grid/RTL Mode", [&](agi::OptionValue const&) {
+			bool new_rtl = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
+			SetLayoutDirection(new_rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+			Refresh(false);
+		}),
 	});
 
 	Bind(wxEVT_CONTEXT_MENU, &BaseGrid::OnContextMenu, this);
@@ -284,6 +290,32 @@ void BaseGrid::OnActiveLineChanged(AssDialogue *new_active) {
 		MakeActiveLineVisible();
 
 		extendRow = active_row = new_active->Row;
+
+		// On Ubuntu and macOS, auto-sync grid RTL mode with the active editor.
+		// wxWidgets auto-detects RTL for text controls, so we sync the grid to match.
+#if defined(__WXGTK__) || defined(__WXMAC__)
+		if (context && context->parent) {
+			wxWindow *editor = nullptr;
+			for (wxWindow *win : context->parent->GetChildren()) {
+				if (dynamic_cast<wxTextCtrl*>(win) || dynamic_cast<wxStyledTextCtrl*>(win)) {
+					editor = win;
+					break;
+				}
+			}
+
+			if (editor) {
+				wxLayoutDirection editor_dir = editor->GetLayoutDirection();
+				bool grid_rtl = (GetLayoutDirection() == wxLayout_RightToLeft);
+				bool editor_rtl = (editor_dir == wxLayout_RightToLeft);
+
+				if (editor_rtl != grid_rtl) {
+					OPT_SET("Subtitle/Grid/RTL Mode")->SetBool(editor_rtl);
+					SetLayoutDirection(editor_rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+				}
+			}
+		}
+#endif
+
 		Refresh(false);
 	}
 	else

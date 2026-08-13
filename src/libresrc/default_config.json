@@ -386,6 +386,7 @@
 	},
 
 	"Subtitle" : {
+		"Use STC" : false,
 		"Character Counter" : {
 			"Ignore Whitespace" : true,
 			"Ignore Punctuation" : true,
@@ -401,7 +402,8 @@
 		"Edit Box" : {
 			"Soft Line Break": false,
 			"Font Face" : "",
-			"Font Size" : 10
+			"Font Size" : 10,
+			"RTL Mode" : false
 		},
 		"Grid" : {
 			"Column" : [
@@ -412,7 +414,8 @@
 			"Font Size" : 9,
 			"Hide Overrides" : 1,
 			"Hide Overrides Char" : "☀",
-			"Highlight Subtitles in Frame" : true
+			"Highlight Subtitles in Frame" : true,
+			"RTL Mode" : false
 		},
 		"Highlight" : {
 			"Syntax" : true

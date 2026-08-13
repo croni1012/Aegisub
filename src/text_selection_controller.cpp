@@ -16,60 +16,90 @@
 
 #include "text_selection_controller.h"
 
+#ifdef WITH_WXSTC
 #include <wx/stc/stc.h>
+#endif
+#include <wx/textctrl.h>
 
-void TextSelectionController::SetControl(wxStyledTextCtrl *ctrl) {
-	this->ctrl = ctrl;
-	if (ctrl)
-		ctrl->Bind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+#ifdef WITH_WXSTC
+void TextSelectionController::SetControl(wxStyledTextCtrl* ctrl) {
+	ctrl_stc = ctrl;
+}
+#endif
+
+void TextSelectionController::SetControl(wxTextCtrl* ctrl) {
+	ctrl_te = ctrl;
 }
 
 TextSelectionController::~TextSelectionController() {
-	if (ctrl) ctrl->Unbind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+#ifdef WITH_WXSTC
+	if (ctrl_stc) ctrl_stc->Unbind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+#endif
+	if (ctrl_te) ctrl_te->Unbind(wxEVT_TEXT, &TextSelectionController::UpdateUI, this);
 }
 
 #define GET(var, new_value) do { \
-	int tmp = new_value;      \
+	long tmp = new_value;      \
 	if (tmp != var) {         \
 		var = tmp;            \
 		changed = true;       \
 	}                         \
 } while(false)
 
-#define SET(var, new_value, Setter) do { \
+#define SET(var, new_value) do { \
 	if (var != new_value) {              \
 		var = new_value;                 \
-		if (ctrl) ctrl->Setter(var);     \
+		if (ctrl_te) ctrl_te->SetSelection(var, var); \
+		if (ctrl_stc) ctrl_stc->SetCurrentPos(var); \
 	}                                    \
 } while (false)
 
-void TextSelectionController::UpdateUI(wxStyledTextEvent &evt) {
+void TextSelectionController::UpdateUI(wxEvent &evt) {
 	if (changing) return;
 
 	bool changed = false;
-	GET(insertion_point, ctrl->GetInsertionPoint());
-	if (evt.GetUpdated() & wxSTC_UPDATE_SELECTION) {
-		GET(selection_start, ctrl->GetSelectionStart());
-		GET(selection_end, ctrl->GetSelectionEnd());
+#ifdef WITH_WXSTC
+	if (use_stc && ctrl_stc) {
+		insertion_point = ctrl_stc->GetCurrentPos();
+		selection_start = ctrl_stc->GetSelectionStart();
+		selection_end = ctrl_stc->GetSelectionEnd();
+	} else
+#endif
+	if (ctrl_te) {
+		insertion_point = ctrl_te->GetInsertionPoint();
+		selection_start = ctrl_te->GetInsertionPoint();
+		selection_end = ctrl_te->GetInsertionPoint();
 	}
-	else {
-		GET(selection_start, insertion_point);
-		GET(selection_end, insertion_point);
-	}
-	if (changed) AnnounceSelectionChanged();
+	AnnounceSelectionChanged();
 }
 
-void TextSelectionController::SetInsertionPoint(int position) {
+void TextSelectionController::SetInsertionPoint(long position) {
 	changing = true;
-	SET(insertion_point, position, SetInsertionPoint);
+#ifdef WITH_WXSTC
+	if (use_stc && ctrl_stc) {
+		ctrl_stc->SetCurrentPos(position);
+	} else
+#endif
+	if (ctrl_te) {
+		ctrl_te->SetInsertionPoint(position);
+	}
+	insertion_point = position;
 	changing = false;
 	AnnounceSelectionChanged();
 }
 
-void TextSelectionController::SetSelection(int start, int end) {
+void TextSelectionController::SetSelection(long start, long end) {
 	changing = true;
-	SET(selection_start, start, SetSelectionStart);
-	SET(selection_end, end, SetSelectionEnd);
+#ifdef WITH_WXSTC
+	if (use_stc && ctrl_stc) {
+		ctrl_stc->SetSelection(start, end);
+	} else
+#endif
+	if (ctrl_te) {
+		ctrl_te->SetSelection(start, end);
+	}
+	selection_start = start;
+	selection_end = end;
 	changing = false;
 	AnnounceSelectionChanged();
 }

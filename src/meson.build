@@ -191,6 +191,10 @@ aegisub_src = files(
     'visual_tool_vector_clip.cpp',
 )
 
+if conf.has('WITH_WXSTC')
+    aegisub_src += files('subs_edit_ctrl_stc.cpp')
+endif
+
 if host_machine.system() == 'darwin'
     aegisub_src += files(
         'font_file_lister_coretext.mm',

@@ -50,6 +50,9 @@
 #include "project.h"
 #include "selection_controller.h"
 #include "subs_edit_ctrl.h"
+#ifdef WITH_WXSTC
+#include "subs_edit_ctrl_stc.h"
+#endif
 #include "text_selection_controller.h"
 #include "timeedit_ctrl.h"
 #include "tooltip_manager.h"
@@ -210,8 +213,34 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	main_sizer->Add(middle_right_sizer,0,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 
 	// Text editor
-	edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN), c);
-	edit_ctrl->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
+#ifdef WITH_WXSTC
+	if (use_stc) {
+		edit_ctrl_stc = new SubsStyledTextEditCtrl(this, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN), c);
+		edit_ctrl_stc->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
+		edit_ctrl_stc->SetInitialSize(FromDIP(wxSize(300,50)));
+		main_sizer->Add(edit_ctrl_stc, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 3));
+		edit_ctrl_stc->Bind(wxEVT_STC_MODIFIED, &SubsEditBox::OnChangeStc, this);
+		edit_ctrl_stc->SetModEventMask(wxSTC_MOD_INSERTTEXT | wxSTC_MOD_DELETETEXT | wxSTC_STARTACTION);
+		context->textSelectionController->SetControl(edit_ctrl_stc);
+		edit_ctrl_stc->SetFocus();
+	} else {
+		edit_ctrl_tc = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN), c);
+		edit_ctrl_tc->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
+		edit_ctrl_tc->SetInitialSize(FromDIP(wxSize(300,50)));
+		main_sizer->Add(edit_ctrl_tc, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 3));
+		edit_ctrl_tc->Bind(wxEVT_TEXT, &SubsEditBox::OnChangeTc, this);
+		context->textSelectionController->SetControl(edit_ctrl_tc);
+		edit_ctrl_tc->SetFocus();
+	}
+#else
+	edit_ctrl_tc = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN), c);
+	edit_ctrl_tc->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
+	edit_ctrl_tc->SetInitialSize(FromDIP(wxSize(300,50)));
+	main_sizer->Add(edit_ctrl_tc, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 3));
+	edit_ctrl_tc->Bind(wxEVT_TEXT, &SubsEditBox::OnChangeTc, this);
+	context->textSelectionController->SetControl(edit_ctrl_tc);
+	edit_ctrl_tc->SetFocus();
+#endif
 
 	secondary_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN) | wxTE_MULTILINE | wxTE_READONLY);
 	souceline_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN) | wxTE_MULTILINE | wxTE_READONLY);
@@ -236,9 +265,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	main_sizer->Hide(bottom_sizer);
 
 	SetSizerAndFit(main_sizer);
-
-	edit_ctrl->Bind(wxEVT_STC_MODIFIED, &SubsEditBox::OnChange, this);
-	edit_ctrl->SetModEventMask(wxSTC_MOD_INSERTTEXT | wxSTC_MOD_DELETETEXT | wxSTC_STARTACTION);
 
 	Bind(wxEVT_TEXT, &SubsEditBox::OnLayerEnter, this, layer->GetId());
 	Bind(wxEVT_SPINCTRL, &SubsEditBox::OnLayerEnter, this, layer->GetId());
@@ -270,7 +296,13 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 }
 
 SubsEditBox::~SubsEditBox() {
-	c->textSelectionController->SetControl(nullptr);
+	// Disambiguate nullptr for overloaded SetControl by casting to the
+	// specific control pointer types. Call both to ensure any bound control
+	// is cleared regardless of which overload was used to set it.
+#ifdef WITH_WXSTC
+	c->textSelectionController->SetControl(static_cast<wxStyledTextCtrl*>(nullptr));
+#endif
+	c->textSelectionController->SetControl(static_cast<wxTextCtrl*>(nullptr));
 }
 
 wxTextCtrl *SubsEditBox::MakeMarginCtrl(wxString const& tooltip, int margin, wxString const& commit_msg) {
@@ -372,7 +404,14 @@ void SubsEditBox::UpdateFields(int type, bool repopulate_lists) {
 	}
 
 	if (type & AssFile::COMMIT_DIAG_TEXT) {
-		edit_ctrl->SetTextTo(line->Text);
+#ifdef WITH_WXSTC
+		if (use_stc && edit_ctrl_stc) {
+			edit_ctrl_stc->SetTextTo(line->Text);
+		} else
+#endif
+		if (edit_ctrl_tc) {
+			edit_ctrl_tc->SetValue(to_wx(line->Text));
+		}
 		souceline_editor->SetValue(to_wx(line->SourceLineText));
 		UpdateCharacterCount(line->Text);
 	}
@@ -459,10 +498,20 @@ void SubsEditBox::OnKeyDown(wxKeyEvent &event) {
 	hotkey::check("Subtitle Edit Box", c, event);
 }
 
-void SubsEditBox::OnChange(wxStyledTextEvent &event) {
-	if (line && edit_ctrl->GetTextRaw().data() != line->Text.get()) {
+#ifdef WITH_WXSTC
+void SubsEditBox::OnChangeStc(wxStyledTextEvent &event) {
+	if (line && edit_ctrl_stc->GetTextRaw().data() != line->Text.get()) {
 		if (event.GetModificationType() & wxSTC_STARTACTION)
 			commit_id = -1;
+		CommitText(_("modify text"));
+		UpdateCharacterCount(line->Text);
+	}
+}
+#endif
+
+void SubsEditBox::OnChangeTc(wxCommandEvent& event) {
+	if (line && from_wx(edit_ctrl_tc->GetValue()) != line->Text.get()) {
+		commit_id = -1;
 		CommitText(_("modify text"));
 		UpdateCharacterCount(line->Text);
 	}
@@ -497,8 +546,15 @@ void SubsEditBox::SetSelectedRows(T AssDialogueBase::*field, wxString const& val
 }
 
 void SubsEditBox::CommitText(wxString const& desc) {
-	auto data = edit_ctrl->GetTextRaw();
-	SetSelectedRows(&AssDialogue::Text, boost::flyweight<std::string>(data.data(), data.length()), desc, AssFile::COMMIT_DIAG_TEXT, true);
+#ifdef WITH_WXSTC
+	if (use_stc && edit_ctrl_stc) {
+		auto data = edit_ctrl_stc->GetTextRaw();
+		SetSelectedRows(&AssDialogue::Text, boost::flyweight<std::string>(data.data(), data.length()), desc, AssFile::COMMIT_DIAG_TEXT, true);
+	} else
+#endif
+	if (edit_ctrl_tc) {
+		SetSelectedRows(&AssDialogue::Text, edit_ctrl_tc->GetValue(), desc, AssFile::COMMIT_DIAG_TEXT, true);
+	}
 }
 
 void SubsEditBox::CommitTimes(TimeField field) {
@@ -597,7 +653,14 @@ void SubsEditBox::SetControlsState(bool state) {
 	Enable(state);
 	if (!state) {
 		wxEventBlocker blocker(this);
-		edit_ctrl->SetTextTo("");
+#ifdef WITH_WXSTC
+		if (use_stc && edit_ctrl_stc) {
+			edit_ctrl_stc->SetTextTo("");
+		} else
+#endif
+		if (edit_ctrl_tc) {
+			edit_ctrl_tc->SetValue("");
+		}
 	}
 }
 
@@ -676,7 +739,14 @@ void SubsEditBox::OnCommentChange(wxCommandEvent &evt) {
 
 void SubsEditBox::CallCommand(const char *cmd_name) {
 	cmd::call(cmd_name, c);
-	edit_ctrl->SetFocus();
+#ifdef WITH_WXSTC
+	if (use_stc && edit_ctrl_stc) {
+		edit_ctrl_stc->SetFocus();
+	} else
+#endif
+	if (edit_ctrl_tc) {
+		edit_ctrl_tc->SetFocus();
+	}
 }
 
 void SubsEditBox::UpdateCharacterCount(std::string const& text) {

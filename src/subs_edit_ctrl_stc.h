@@ -18,7 +18,7 @@
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 // ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
 // LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
 // SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
@@ -39,9 +39,9 @@ namespace agi {
 	namespace ass { struct DialogueToken; }
 }
 
-/// @class SubsTextEditCtrl
+/// @class SubsStyledTextEditCtrl
 /// @brief A Scintilla control with spell checking and syntax highlighting
-class SubsTextEditCtrl final : public wxStyledTextCtrl {
+class SubsStyledTextEditCtrl final : public wxStyledTextCtrl {
 	/// Backend spellchecker to use
 	std::unique_ptr<agi::SpellChecker> spellchecker;
 
@@ -80,26 +80,14 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Tokenized version of line_text
 	std::vector<agi::ass::DialogueToken> tokenized_line;
 
-	/// Caret, anchor, and hit position captured before the native right-click handler can
-	/// move them. Opening the context menu must never alter the text selection.
-	bool right_click_pending = false;
-	int right_click_anchor = 0;
-	int right_click_caret = 0;
-	int right_click_position = -1;
-
-	/// Put the anchor and the caret back exactly where they were, including when the anchor
-	/// is the later of the two. wxStyledTextCtrl::SetSelection cannot express that.
-	void RestoreSelection(int anchor, int caret);
-
 	void OnContextMenu(wxContextMenuEvent &);
-	void OnRightDown(wxMouseEvent &);
 	void OnDoubleClick(wxStyledTextEvent&);
 	void OnUseSuggestion(wxCommandEvent &event);
 	void OnSetDicLanguage(wxCommandEvent &event);
 	void OnSetThesLanguage(wxCommandEvent &event);
+	void OnToggleRTL(wxCommandEvent &event);
 	void OnLoseFocus(wxFocusEvent &event);
 	void OnKeyDown(wxKeyEvent &event);
-	void OnToggleRTL(wxCommandEvent &event);
 
 	void SetSyntaxStyle(int id, wxFont &font, std::string const& name, wxColor const& default_background);
 	void Subscribe(std::string const& name);
@@ -119,12 +107,12 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Generate a languages submenu from a list of locales and a current language
 	/// @param base_id ID to use for the first menu item
 	/// @param curLang Currently selected language
-	/// @param langs Full list of languages
+	/// @param lang Full list of languages
 	wxMenu *GetLanguagesMenu(int base_id, wxString const& curLang, wxArrayString const& langs);
 
 public:
-	SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context);
-	~SubsTextEditCtrl();
+	SubsStyledTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context);
+	~SubsStyledTextEditCtrl();
 
 	void SetTextTo(std::string const& text);
 	void Paste() override;

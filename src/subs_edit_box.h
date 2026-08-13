@@ -45,6 +45,9 @@ class AssDialogue;
 class AssStyle;
 class SubsTextEditCtrl;
 class TimeEdit;
+#ifdef WITH_WXSTC
+class SubsStyledTextEditCtrl;
+#endif
 class wxButton;
 class wxCheckBox;
 class wxRadioButton;
@@ -199,7 +202,17 @@ class SubsEditBox final : public wxPanel {
 
 	void SetDurationField();
 
-	SubsTextEditCtrl *edit_ctrl;
+#ifdef WITH_WXSTC
+	SubsStyledTextEditCtrl *edit_ctrl_stc = nullptr;
+	void OnChangeStc(wxStyledTextEvent &event);
+#endif
+	SubsTextEditCtrl *edit_ctrl_tc = nullptr;
+	void OnChangeTc(wxCommandEvent& event);
+
+#ifdef WITH_WXSTC
+	bool use_stc = OPT_GET("Subtitle/Use STC")->GetBool();
+#endif
+
 	wxTextCtrl *secondary_editor;
 	wxTextCtrl *souceline_editor;
 
