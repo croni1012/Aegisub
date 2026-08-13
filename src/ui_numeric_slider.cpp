@@ -282,7 +282,7 @@ private:
             if (std::abs(cfg.presets[i]-value) < 0.0001)
                 menu.Check(id,true);
 
-            menu.Bind(wxEVT_MENU,[=](wxCommandEvent&)
+            menu.Bind(wxEVT_MENU,[=, this](wxCommandEvent&)
             {
                 SetValue(cfg.presets[i]);
             }, id);
