@@ -39,13 +39,13 @@ class TextSelectionController {
 	bool use_stc = true;
 #endif
 
-	void UpdateUI(wxStyledTextEvent &evt);
+	void UpdateUI(wxEvent &evt);
 
 	agi::signal::Signal<> AnnounceSelectionChanged;
 
 public:
-	void SetSelection(int start, int end);
-	void SetInsertionPoint(int point);
+	void SetSelection(long start, long end);
+	void SetInsertionPoint(long point);
 
 	// This set of functions allows staging changes to the selection or insertion points, which can then be applied later.
 	// This is useful when one is still waiting on other changes to be applied, but already listening for changes to the
