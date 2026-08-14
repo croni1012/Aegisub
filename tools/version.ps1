@@ -30,6 +30,10 @@ if ([System.IO.Path]::GetFullPath([System.IO.Path]::Combine((pwd).Path, $BuildRo
 $gitVersionHeaderPath = Join-Path $BuildRoot 'git_version.h'
 
 $version = @{}
+$version['TAGGED_RELEASE'] = $false
+$version['RESOURCE_BASE_VERSION'] = @(0, 0, 0)
+$version['INSTALLER_VERSION'] = '0.0.0'
+
 if (Test-Path $gitVersionHeaderPath) {
   Get-Content $gitVersionHeaderPath | %{$_.Trim()} | ?{$_} | %{
     switch -regex ($_) {
