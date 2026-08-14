@@ -57,9 +57,6 @@
 #include "timeedit_ctrl.h"
 #include "tooltip_manager.h"
 #include "validators.h"
-#ifdef __WXOSX__
-#include "osx/scintilla_ime.h"
-#endif
 
 #include <libaegisub/character_count.h>
 #include <libaegisub/util.h>
@@ -78,6 +75,9 @@
 #include <wx/spinctrl.h>
 #ifdef WITH_WXSTC
 #include <wx/stc/stc.h>
+#endif
+#ifdef __WXOSX__
+#include "osx/scintilla_ime.h"
 #endif
 
 namespace {
