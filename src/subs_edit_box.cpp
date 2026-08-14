@@ -287,12 +287,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 		context->initialLineState->AddChangeListener(&SubsEditBox::OnLineInitialTextChanged, this),
 	 });
 
-	if (use_stc && edit_ctrl_stc) {
-		edit_ctrl_stc->SetFocus();
-	} else if (edit_ctrl_tc) {
-		edit_ctrl_tc->SetFocus();
-	}
-
 	bool show_original = OPT_GET("Subtitle/Show Original")->GetBool();
 	if (show_original) {
 		split_box->SetValue(true);
@@ -410,9 +404,16 @@ void SubsEditBox::UpdateFields(int type, bool repopulate_lists) {
 
 	if (type & AssFile::COMMIT_DIAG_TEXT) {
 #ifdef WITH_WXSTC
-		if (use_stc && edit_ctrl_stc) {
-			edit_ctrl_stc->SetTextTo(line->Text);
-		} else
+	if (use_stc) {
+	    edit_ctrl_stc->SetTextTo(line->Text);
+	}
+	else {
+#endif
+	    // Use SetTextTo for native control as well so the
+	    // TextSelectionController stays in sync (handles UTF-8 mapping).
+	    edit_ctrl_tc->SetTextTo(line->Text);
+#ifdef WITH_WXSTC
+	}
 #endif
 		if (edit_ctrl_tc) {
 			edit_ctrl_tc->SetValue(to_wx(line->Text));
@@ -500,7 +501,45 @@ void SubsEditBox::UpdateFrameTiming(agi::vfr::Framerate const& fps) {
 }
 
 void SubsEditBox::OnKeyDown(wxKeyEvent &event) {
+	// Allow IME to handle events first (only for STC)
+#ifdef WITH_WXSTC
+	if (use_stc) {
+		if (!osx::ime::process_key_event(edit_ctrl_stc, event))
+			hotkey::check("Subtitle Edit Box", c, event);
+	}
+	else
+		hotkey::check("Subtitle Edit Box", c, event);
+#else
 	hotkey::check("Subtitle Edit Box", c, event);
+#endif
+
+	// Toggle text layout direction on Ctrl + Shift (matches original fork behavior
+	// of using Ctrl + Right Shift; here we accept either shift key). This switches
+	// between LeftToRight and RightToLeft for the edit control and secondary editor.
+	if (event.GetKeyCode() == WXK_SHIFT && event.ControlDown() && event.ShiftDown()) {
+		// Determine active edit control and flip its layout direction
+		wxWindow *active_ctrl = nullptr;
+#ifdef WITH_WXSTC
+		active_ctrl = use_stc ? static_cast<wxWindow*>(edit_ctrl_stc) : static_cast<wxWindow*>(edit_ctrl_tc);
+#else
+		active_ctrl = static_cast<wxWindow*>(edit_ctrl_tc);
+#endif
+
+		if (active_ctrl) {
+			wxLayoutDirection cur = active_ctrl->GetLayoutDirection();
+			wxLayoutDirection next = (cur == wxLayout_RightToLeft) ? wxLayout_LeftToRight : wxLayout_RightToLeft;
+			active_ctrl->SetLayoutDirection(next);
+			if (secondary_editor) secondary_editor->SetLayoutDirection(next);
+
+			if (auto stc = dynamic_cast<wxStyledTextCtrl*>(active_ctrl)) {
+				stc->SetViewEOL(false); // trigger minimal refresh
+			}
+
+			// consume the event
+			event.Skip(false);
+			return;
+		}
+	}
 }
 
 #ifdef WITH_WXSTC
@@ -515,8 +554,7 @@ void SubsEditBox::OnChangeStc(wxStyledTextEvent &event) {
 #endif
 
 void SubsEditBox::OnChangeTc(wxCommandEvent& event) {
-	if (line && from_wx(edit_ctrl_tc->GetValue()) != line->Text.get()) {
-		commit_id = -1;
+	if (line && std::string(edit_ctrl_tc->GetValue().utf8_str()) != line->Text.get()) {
 		CommitText(_("modify text"));
 		UpdateCharacterCount(line->Text);
 	}

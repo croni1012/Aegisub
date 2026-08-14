@@ -228,7 +228,6 @@ void Interface(wxTreebook *book, Preferences *parent) {
 	auto edit_box = p->PageSizer(_("Edit Box"));
 	p->OptionAdd(edit_box, _("Use styled edit box"), "Subtitle/Use STC");
 	p->OptionAdd(edit_box, _("Enable call tips"), "App/Call Tips");
-	p->OptionAdd(edit_box, _("Enable RTL mode for Edit Box"), "Subtitle/Edit Box/RTL Mode");
 	p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
 	p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
 	p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
@@ -246,7 +245,6 @@ void Interface(wxTreebook *book, Preferences *parent) {
 	p->OptionAdd(grid, _("Focus grid on click"), "Subtitle/Grid/Focus Allow");
 	p->OptionAdd(grid, _("Highlight visible subtitles"), "Subtitle/Grid/Highlight Subtitles in Frame");
 	p->OptionAdd(grid, _("Hide overrides symbol"), "Subtitle/Grid/Hide Overrides Char");
-	p->OptionAdd(grid, _("Enable RTL mode for Grid"), "Subtitle/Grid/RTL Mode");
 	p->OptionFont(grid, "Subtitle/Grid/");
 
 	auto tl_assistant = p->PageSizer(_("Translation Assistant"));

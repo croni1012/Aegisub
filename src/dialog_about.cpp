@@ -48,8 +48,10 @@ void ShowAboutDialog(wxWindow *parent) {
 		translatorCredit.clear();
 
 	// Generate about string
+	wxString wxVersionString = wxString::Format("wxWidgets %d.%d.%d", wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER);
 	wxString aboutString = wxString("Aegisub ") + GetAegisubShortVersionString() + ".\n"
-		"Copyright (c) 2005-2026 Rodrigo Braz Monteiro, Niels Martin Hansen, Thomas Goyne et al.\n\n"
+		"Copyright (c) 2005-2019 Rodrigo Braz Monteiro, Niels Martin Hansen, Thomas Goyne et al.\n"
+		"Built with " + wxVersionString + ".\n\n"
 		"Programmers:\n"
 		"    Alysson Souza e Silva\n"
 		"    Amar Takhar\n"

@@ -386,7 +386,6 @@
 	},
 
 	"Subtitle" : {
-		"Use STC" : false,
 		"Character Counter" : {
 			"Ignore Whitespace" : true,
 			"Ignore Punctuation" : true,
@@ -424,7 +423,8 @@
 		"Show Original": false,
 		"Time Edit" : {
 			"Insert Mode" : true
-		}
+		},
+		"Use STC" : true
 	},
 
 	"Subtitle Format" : {

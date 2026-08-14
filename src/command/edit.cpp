@@ -76,6 +76,9 @@
 #include <wx/clipbrd.h>
 #include <wx/fontdlg.h>
 #include <wx/textentry.h>
+#include <wx/textctrl.h>
+#include <wx/stc/stc.h>
+#include <wx/scrolbar.h>
 
 const std::string foldStartMarker = "{:Foldstart}";
 const std::string foldEndMarker = "{:Foldend}";
@@ -1654,6 +1657,8 @@ struct edit_rtl_mode final : public Command {
 	void operator()(agi::Context *c) override {
 		bool current_mode = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
 		bool new_mode = !current_mode;
+		
+		// Update config options only - grid and editor rendering will automatically adjust
 		OPT_SET("Subtitle/Grid/RTL Mode")->SetBool(new_mode);
 		OPT_SET("Subtitle/Edit Box/RTL Mode")->SetBool(new_mode);
 	}
@@ -1795,9 +1800,9 @@ namespace cmd {
 		reg(std::make_unique<edit_undo>());
 		reg(std::make_unique<edit_revert>());
 		reg(std::make_unique<edit_insert_original>());
-		reg(std::make_unique<edit_rtl_mode>());
 		reg(std::make_unique<edit_clear>());
 		reg(std::make_unique<edit_clear_text>());
 		reg(std::make_unique<edit_comment>());
+		reg(std::make_unique<edit_rtl_mode>());
 	}
 }

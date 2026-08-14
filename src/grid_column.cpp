@@ -394,16 +394,21 @@ public:
 
 class GridColumnText final : public GridColumn {
 	const agi::OptionValue *override_mode;
+	const agi::OptionValue *rtl_mode;
 	wxString replace_char;
 
 	agi::signal::Connection replace_char_connection;
+	agi::signal::Connection rtl_mode_connection;
 
 public:
 	GridColumnText()
 	: override_mode(OPT_GET("Subtitle/Grid/Hide Overrides"))
+	, rtl_mode(OPT_GET("Subtitle/Grid/RTL Mode"))
 	, replace_char(to_wx(OPT_GET("Subtitle/Grid/Hide Overrides Char")->GetString()))
 	, replace_char_connection(OPT_SUB("Subtitle/Grid/Hide Overrides Char",
 		[&](agi::OptionValue const& v) { replace_char = to_wx(v.GetString()); }))
+	, rtl_mode_connection(OPT_SUB("Subtitle/Grid/RTL Mode",
+		[](agi::OptionValue const&) { /* RTL mode changed, grid will refresh */ }))
 	{
 	}
 

@@ -58,6 +58,13 @@ jobs:
             args: -Db_pch=false -Ddefault_library=static --prefix=/usr
           }
           - {
+            name: Ubuntu AppImage,
+            os: ubuntu-latest,
+            buildtype: release,
+            args: -Db_pch=false,
+            appimage: true
+          }
+          - {
             name: macOS x86_64 Debug,
             os: macos-15-intel,
             buildtype: debugoptimized,
@@ -153,6 +160,16 @@ jobs:
             echo "CXX=g++-12" >> "$GITHUB_ENV"
           fi
 
+      - name: Install AppImage tooling
+        if: matrix.config.appimage
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget desktop-file-utils libfuse2
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O /tmp/linuxdeploy.AppImage
+          chmod +x /tmp/linuxdeploy.AppImage
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool.AppImage
+          chmod +x /tmp/appimagetool.AppImage
+
       - name: Configure
         run: meson setup build ${{ matrix.config.args }} -Dbuildtype=${{ matrix.config.buildtype }} ${{ github.ref_type == 'tag' && '-Dofficial_release=true' || '' }}
 
@@ -161,6 +178,59 @@ jobs:
 
       - name: Run test
         run: meson test -C build --verbose "gtest main"
+
+      - name: Generate Ubuntu AppImage
+        if: matrix.config.appimage
+        run: |
+          set -e
+          appdir="$GITHUB_WORKSPACE/appimage"
+          rm -rf "$appdir"
+          mkdir -p "$appdir/usr/bin" "$appdir/usr/share/applications" "$appdir/usr/share/pixmaps"
+
+          cp build/aegisub "$appdir/usr/bin/aegisub"
+          chmod +x "$appdir/usr/bin/aegisub"
+
+          desktop_file=$(find build -name '*.desktop' | head -n 1)
+          if [ -n "$desktop_file" ]; then
+            cp "$desktop_file" "$appdir/usr/share/applications/"
+          fi
+
+          icon_name=$(grep '^Icon=' "$desktop_file" | cut -d= -f2- | tr -d '\r')
+          icon_src=$(find packages/desktop -path '*/aegisub.png' | head -n 1)
+          if [ -n "$icon_src" ]; then
+            for size in 16 22 24 32 48 64 128 256; do
+              mkdir -p "$appdir/usr/share/icons/hicolor/${size}x${size}/apps"
+              cp "$icon_src" "$appdir/usr/share/icons/hicolor/${size}x${size}/apps/${icon_name}.png"
+            done
+            cp "$icon_src" "$appdir/usr/share/pixmaps/${icon_name}.png"
+          fi
+
+          if [ ! -f "$appdir/usr/share/applications"/*.desktop ]; then
+            echo "No desktop file found for AppImage packaging" >&2
+            exit 1
+          fi
+
+          /tmp/linuxdeploy.AppImage --appdir "$appdir" \
+            -e "$appdir/usr/bin/aegisub" \
+            -d "$appdir/usr/share/applications"/*.desktop \
+            -i "$appdir/usr/share/icons/hicolor/256x256/apps/${icon_name}.png" \
+            --output appimage
+
+          appimage_path=$(find . -maxdepth 1 -name '*.AppImage' | head -n 1)
+          if [ -z "$appimage_path" ]; then
+            echo "AppImage was not produced" >&2
+            exit 1
+          fi
+
+          mv "$appimage_path" "Aegisub-Ubuntu.AppImage"
+
+      - name: Upload artifacts - Ubuntu AppImage
+        uses: actions/upload-artifact@v6
+        if: matrix.config.appimage
+        with:
+          name: ${{ matrix.config.name }} - appimage
+          path: Aegisub-Ubuntu.AppImage
+          if-no-files-found: error
 
       # Windows artifacts
       - name: Generate Windows installer
