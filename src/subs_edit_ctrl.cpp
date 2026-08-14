@@ -328,9 +328,9 @@ void SubsTextEditCtrl::UpdateCallTip() {
 }
 
 void SubsTextEditCtrl::SetTextTo(std::string const& text) {
-	// Native wxTextCtrl positions are in wxString character units, not UTF-8 byte length.
-	// Using the UTF-8 byte count here causes out-of-range positions when a tag/color
-	// operation updates the text and selection afterwards.
+	// Native wxTextCtrl must be updated in one pass: set the text, then restore the
+	// insertion point. Resetting the selection/controller first clears the text and
+	// leaves the controller with invalid positions in non-STC mode.
 	SetEvtHandlerEnabled(false);
 	Freeze();
 
@@ -341,18 +341,13 @@ void SubsTextEditCtrl::SetTextTo(std::string const& text) {
 	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
 	line_text.clear();
 
-	if (context) {
-		context->textSelectionController->SetSelection(0, 0);
-		SetValue(new_text);
-		SetInsertionPoint(new_insertion_point);
-		context->textSelectionController->SetSelection(new_insertion_point, new_insertion_point);
-	}
-	else {
-		SetSelection(0, 0);
-		SetValue(new_text);
-		SetInsertionPoint(new_insertion_point);
+	SetValue(new_text);
+	SetInsertionPoint(new_insertion_point);
+
+	if (context)
+		context->textSelectionController->SetInsertionPoint(new_insertion_point);
+	else
 		SetSelection(new_insertion_point, new_insertion_point);
-	}
 
 	SetEvtHandlerEnabled(true);
 	Thaw();
