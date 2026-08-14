@@ -328,17 +328,16 @@ void SubsTextEditCtrl::UpdateCallTip() {
 }
 
 void SubsTextEditCtrl::SetTextTo(std::string const& text) {
+	// Preserve the cursor position without wiping the whole control when we update
+	// the dialog text from a tag/color operation.
 	SetEvtHandlerEnabled(false);
 	Freeze();
 
-	auto insertion_point = GetInsertionPoint();
-	if (static_cast<size_t>(insertion_point) > line_text.size())
-		line_text = GetTextRaw().data();
+	const long insertion_point = std::max<long>(0, GetInsertionPoint());
+	long new_insertion_point = std::min<long>(static_cast<long>(text.size()), insertion_point);
+
 	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
 	line_text.clear();
-
-	// Simply clamp insertion point to new text length
-	long new_insertion_point = std::min<long>(text.size(), insertion_point);
 
 	if (context) {
 		context->textSelectionController->SetSelection(0, 0);

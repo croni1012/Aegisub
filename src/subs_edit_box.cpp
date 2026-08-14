@@ -422,15 +422,12 @@ void SubsEditBox::UpdateFields(int type, bool repopulate_lists) {
 	}
 	else {
 #endif
-	    // Use SetTextTo for native control as well so the
-	    // TextSelectionController stays in sync (handles UTF-8 mapping).
+	    // Use SetTextTo for native control so the text selection state stays in sync.
+	    // Do not call SetValue() again here; it wipes the entire text field in native mode.
 	    edit_ctrl_tc->SetTextTo(line->Text);
 #ifdef WITH_WXSTC
 	}
 #endif
-		if (edit_ctrl_tc) {
-			edit_ctrl_tc->SetValue(to_wx(line->Text));
-		}
 		souceline_editor->SetValue(to_wx(line->SourceLineText));
 		UpdateCharacterCount(line->Text);
 	}
