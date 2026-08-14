@@ -328,28 +328,30 @@ void SubsTextEditCtrl::UpdateCallTip() {
 }
 
 void SubsTextEditCtrl::SetTextTo(std::string const& text) {
-	// Preserve the cursor position without wiping the whole control when we update
-	// the dialog text from a tag/color operation.
+	// Native wxTextCtrl positions are in wxString character units, not UTF-8 byte length.
+	// Using the UTF-8 byte count here causes out-of-range positions when a tag/color
+	// operation updates the text and selection afterwards.
 	SetEvtHandlerEnabled(false);
 	Freeze();
 
+	wxString new_text = to_wx(text);
 	const long insertion_point = std::max<long>(0, GetInsertionPoint());
-	long new_insertion_point = std::min<long>(static_cast<long>(text.size()), insertion_point);
+	const long new_insertion_point = std::min<long>(new_text.length(), insertion_point);
 
 	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
 	line_text.clear();
 
 	if (context) {
 		context->textSelectionController->SetSelection(0, 0);
-		SetTextRaw(text.c_str());
-		auto pos = agi::IndexOfCharacter(text, old_pos);
-		context->textSelectionController->SetSelection(pos, pos);
+		SetValue(new_text);
+		SetInsertionPoint(new_insertion_point);
+		context->textSelectionController->SetSelection(new_insertion_point, new_insertion_point);
 	}
 	else {
 		SetSelection(0, 0);
-		SetTextRaw(text.c_str());
-		auto pos = agi::IndexOfCharacter(text, old_pos);
-		SetSelection(pos, pos);
+		SetValue(new_text);
+		SetInsertionPoint(new_insertion_point);
+		SetSelection(new_insertion_point, new_insertion_point);
 	}
 
 	SetEvtHandlerEnabled(true);
