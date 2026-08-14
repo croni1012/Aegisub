@@ -337,6 +337,9 @@ void SubsTextEditCtrl::SetTextTo(std::string const& text) {
 	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
 	line_text.clear();
 
+	// Simply clamp insertion point to new text length
+	long new_insertion_point = std::min<long>(text.size(), insertion_point);
+
 	if (context) {
 		context->textSelectionController->SetSelection(0, 0);
 		SetTextRaw(text.c_str());
