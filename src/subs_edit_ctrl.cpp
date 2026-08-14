@@ -549,7 +549,7 @@ wxMenu *SubsTextEditCtrl::GetLanguagesMenu(int base_id, wxString const& curLang,
 	return languageMenu;
 }
 
-void SubsTextEditCtrl::OnToggleRTL(wxCommandEvent &event) {
+void SubsTextEditCtrl::OnToggleRTL([[maybe_unused]] wxCommandEvent &event) {
 	bool current_rtl = OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool();
 	bool new_rtl = !current_rtl;
 	OPT_SET("Subtitle/Edit Box/RTL Mode")->SetBool(new_rtl);

@@ -50,6 +50,9 @@
 #include "project.h"
 #include "selection_controller.h"
 #include "subs_edit_ctrl.h"
+#ifdef WITH_WXSTC
+#include "subs_edit_ctrl_stc.h"
+#endif
 #include "text_selection_controller.h"
 #include "timeedit_ctrl.h"
 #include "tooltip_manager.h"
@@ -111,10 +114,12 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 , c(context)
 , undo_timer(GetEventHandler())
 #ifdef WITH_WXSTC
-, use_stc(OPT_GET("Subtitle/Use STC")->GetBool())
 , edit_ctrl_stc(nullptr)
 #endif
 , edit_ctrl_tc(nullptr)
+#ifdef WITH_WXSTC
+, use_stc(OPT_GET("Subtitle/Use STC")->GetBool())
+#endif
 {
 	using std::bind;
 
@@ -561,7 +566,7 @@ void SubsEditBox::OnChangeStc(wxStyledTextEvent &event) {
 }
 #endif
 
-void SubsEditBox::OnChangeTc(wxCommandEvent& event) {
+void SubsEditBox::OnChangeTc([[maybe_unused]] wxCommandEvent& event) {
 	if (line && std::string(edit_ctrl_tc->GetValue().utf8_str()) != line->Text.get()) {
 		CommitText(_("modify text"));
 		UpdateCharacterCount(line->Text);

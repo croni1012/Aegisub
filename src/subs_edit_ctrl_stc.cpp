@@ -614,7 +614,7 @@ void SubsStyledTextEditCtrl::OnSetThesLanguage(wxCommandEvent &event) {
 	UpdateStyle();
 }
 
-void SubsStyledTextEditCtrl::OnToggleRTL(wxCommandEvent &event) {
+void SubsStyledTextEditCtrl::OnToggleRTL([[maybe_unused]] wxCommandEvent &event) {
 	// Get current RTL mode from config
 	bool current_rtl = OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool();
 	bool new_rtl = !current_rtl;
