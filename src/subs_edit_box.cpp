@@ -50,9 +50,6 @@
 #include "project.h"
 #include "selection_controller.h"
 #include "subs_edit_ctrl.h"
-#ifdef WITH_WXSTC
-#include "subs_edit_ctrl_stc.h"
-#endif
 #include "text_selection_controller.h"
 #include "timeedit_ctrl.h"
 #include "tooltip_manager.h"
@@ -73,6 +70,9 @@
 #include <wx/settings.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
+#ifdef WITH_WXSTC
+#include <wx/stc/stc.h>
+#endif
 
 namespace {
 
@@ -110,10 +110,12 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 : wxPanel(parent, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | (OPT_GET("App/Dark Mode")->GetBool() ? wxBORDER_STATIC : wxRAISED_BORDER), "SubsEditBox")
 , c(context)
 , undo_timer(GetEventHandler())
-{
 #ifdef WITH_WXSTC
-	use_stc = OPT_GET("Subtitle/Use STC")->GetBool();
+, use_stc(OPT_GET("Subtitle/Use STC")->GetBool())
+, edit_ctrl_stc(nullptr)
 #endif
+, edit_ctrl_tc(nullptr)
+{
 	using std::bind;
 
 	// Top controls
@@ -242,6 +244,8 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	main_sizer->Add(edit_ctrl_tc, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 3));
 	edit_ctrl_tc->Bind(wxEVT_TEXT, &SubsEditBox::OnChangeTc, this);
 	context->textSelectionController->SetControl(edit_ctrl_tc);
+	// Bind the native wxTextCtrl to the TextSelectionController so selection
+	// coordinates are kept in sync (convert between UTF-8 and codepoints).
 	edit_ctrl_tc->SetFocus();
 #endif
 
@@ -501,11 +505,15 @@ void SubsEditBox::UpdateFrameTiming(agi::vfr::Framerate const& fps) {
 }
 
 void SubsEditBox::OnKeyDown(wxKeyEvent &event) {
-	// Allow IME to handle events first (only for STC)
+	// Allow IME to handle events first (only for STC on macOS)
 #ifdef WITH_WXSTC
 	if (use_stc) {
+#ifdef __WXOSX__
 		if (!osx::ime::process_key_event(edit_ctrl_stc, event))
 			hotkey::check("Subtitle Edit Box", c, event);
+#else
+		hotkey::check("Subtitle Edit Box", c, event);
+#endif
 	}
 	else
 		hotkey::check("Subtitle Edit Box", c, event);
