@@ -338,12 +338,10 @@ void SubsTextEditCtrl::SetTextTo(std::string const& text) {
 	wxCharBuffer curbuf = GetValue().utf8_str();
 	std::string cur = curbuf.data() ? std::string(curbuf.data(), curbuf.length()) : std::string();
 
-	if (static_cast<size_t>(insertion_point) > cur.size())
-		; // nothing to do, cur is up-to-date
-
 	// Compute old character index (clamped)
 	size_t clamp_pos = std::min<size_t>(cur.size(), static_cast<size_t>(std::max<long>(0, insertion_point)));
-	size_t old_pos = agi::CharacterCount(cur.begin(), cur.begin() + clamp_pos, 0);
+	std::string_view cur_view(cur);
+	size_t old_pos = agi::CharacterCount(cur_view.substr(0, clamp_pos), 0);
 
 	if (context) {
 		context->textSelectionController->SetSelection(0, 0);
