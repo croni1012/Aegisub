@@ -328,26 +328,35 @@ void SubsTextEditCtrl::UpdateCallTip() {
 }
 
 void SubsTextEditCtrl::SetTextTo(std::string const& text) {
-	// Native wxTextCtrl must be updated in one pass: set the text, then restore the
-	// insertion point. Resetting the selection/controller first clears the text and
-	// leaves the controller with invalid positions in non-STC mode.
+	// Mirror STC behaviour: preserve insertion point, update selection controller
 	SetEvtHandlerEnabled(false);
 	Freeze();
 
-	wxString new_text = to_wx(text);
-	const long insertion_point = std::max<long>(0, GetInsertionPoint());
-	const long new_insertion_point = std::min<long>(new_text.length(), insertion_point);
+	long insertion_point = GetInsertionPoint();
 
-	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
-	line_text.clear();
+	// Get current value as std::string
+	wxCharBuffer curbuf = GetValue().utf8_str();
+	std::string cur = curbuf.data() ? std::string(curbuf.data(), curbuf.length()) : std::string();
 
-	SetValue(new_text);
-	SetInsertionPoint(new_insertion_point);
+	if (static_cast<size_t>(insertion_point) > cur.size())
+		; // nothing to do, cur is up-to-date
 
-	if (context)
-		context->textSelectionController->SetInsertionPoint(new_insertion_point);
-	else
-		SetSelection(new_insertion_point, new_insertion_point);
+	// Compute old character index (clamped)
+	size_t clamp_pos = std::min<size_t>(cur.size(), static_cast<size_t>(std::max<long>(0, insertion_point)));
+	size_t old_pos = agi::CharacterCount(cur.begin(), cur.begin() + clamp_pos, 0);
+
+	if (context) {
+		context->textSelectionController->SetSelection(0, 0);
+		SetValue(to_wx(text));
+		auto pos = agi::IndexOfCharacter(text, old_pos);
+		context->textSelectionController->SetSelection(pos, pos);
+	}
+	else {
+		SetSelection(0, 0);
+		SetValue(to_wx(text));
+		auto pos = agi::IndexOfCharacter(text, old_pos);
+		SetSelection(pos, pos);
+	}
 
 	SetEvtHandlerEnabled(true);
 	Thaw();
