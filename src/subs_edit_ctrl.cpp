@@ -223,16 +223,6 @@ void SubsTextEditCtrl::Paste() {
 	SetInsertionPoint(new_pos);
 }
 
-void SubsTextEditCtrl::OnRightDown(wxMouseEvent &event) {
-	right_click_pending = true;
-	right_click_anchor = GetAnchor();
-	right_click_caret = GetCurrentPos();
-	right_click_position = PositionFromPoint(event.GetPosition());
-	SetSelection(right_click_anchor, right_click_caret);
-	// Do not pass the click to Scintilla: its native handler can move the caret or
-	// discard the selection before WM_CONTEXTMENU opens our existing popup menu.
-}
-
 void SubsTextEditCtrl::OnContextMenu(wxContextMenuEvent &event) {
 	wxPoint pos = event.GetPosition();
 	long insertion_point;
@@ -287,14 +277,6 @@ void SubsTextEditCtrl::OnContextMenu(wxContextMenuEvent &event) {
 	}
 
 	PopupMenu(&menu);
-}
-
-void SubsTextEditCtrl::OnDoubleClick([[maybe_unused]] wxMouseEvent &evt) {
-	// Double-click word selection
-	long insertion = GetInsertionPoint();
-	auto bounds = GetBoundsOfWordAtPosition(insertion);
-	if (bounds.second != 0)
-		SetSelection(bounds.first, bounds.first + bounds.second);
 }
 
 void SubsTextEditCtrl::AddSpellCheckerEntries(wxMenu &menu) {
@@ -415,12 +397,14 @@ void SubsTextEditCtrl::OnUseSuggestion(wxCommandEvent &event) {
 		suggestion.resize(pos - 1);
 	}
 
-	// line_text needs to get cleared before SetTextRaw to ensure it gets reparsed
-	std::string new_text;
-	swap(line_text, new_text);
-	SetTextRaw(new_text.replace(currentWordPos.first, currentWordPos.second, suggestion).c_str());
-
-	SetSelection(currentWordPos.first, currentWordPos.first + suggestion.size());
+	// Replace the selected word using wxTextCtrl APIs.
+	// The old implementation used Scintilla's line_text/SetTextRaw state,
+	// which is not present after migrating SubsTextEditCtrl to wxTextCtrl.
+	wxString text = GetValue();
+	wxString suggestion_wx = to_wx(suggestion);
+	text.replace(currentWordPos.first, currentWordPos.second, suggestion_wx);
+	SetValue(text);
+	SetSelection(currentWordPos.first, currentWordPos.first + static_cast<int>(suggestion_wx.length()));
 	SetFocus();
 }
 
@@ -434,7 +418,7 @@ void SubsTextEditCtrl::OnSetDicLanguage(wxCommandEvent &event) {
 
 	OPT_SET("Tool/Spell Checker/Language")->SetString(lang);
 
-	UpdateStyle();
+	Refresh();
 }
 
 void SubsTextEditCtrl::OnSetThesLanguage(wxCommandEvent &event) {
@@ -447,7 +431,7 @@ void SubsTextEditCtrl::OnSetThesLanguage(wxCommandEvent &event) {
 	if (index >= 0) lang = langs[index];
 	OPT_SET("Tool/Thesaurus/Language")->SetString(lang);
 
-	UpdateStyle();
+	Refresh();
 }
 
 std::pair<int, int> SubsTextEditCtrl::GetBoundsOfWordAtPosition(int pos) {
