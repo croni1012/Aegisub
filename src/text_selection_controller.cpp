@@ -24,6 +24,13 @@
 #ifdef WITH_WXSTC
 void TextSelectionController::SetControl(wxStyledTextCtrl* ctrl) {
 	ctrl_stc = ctrl;
+	ctrl_te = nullptr;
+	if (ctrl) {
+		ctrl->Bind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+	}
+#ifdef WITH_WXSTC
+	use_stc = true;
+#endif
 }
 #endif
 
