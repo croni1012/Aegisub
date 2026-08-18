@@ -21,6 +21,7 @@
 #include "compat.h"
 #include "include/aegisub/context.h"
 #include "options.h"
+#include "theme.h"
 #include "video_controller.h"
 #include "fold_controller.h"
 
@@ -336,7 +337,7 @@ class GridColumnCPS final : public GridColumn {
 	const agi::OptionValue *ignore_punctuation = OPT_GET("Subtitle/Character Counter/Ignore Punctuation");
 	const agi::OptionValue *cps_warn = OPT_GET("Subtitle/Character Counter/CPS Warning Threshold");
 	const agi::OptionValue *cps_error = OPT_GET("Subtitle/Character Counter/CPS Error Threshold");
-	const agi::OptionValue *bg_color = OPT_GET("Colour/Subtitle Grid/CPS Error");
+	const agi::OptionValue *bg_color = OPT_GET(app_theme::ColourOption("Subtitle Grid/CPS Error"));
 
 public:
 	COLUMN_HEADER(_("CPS"))

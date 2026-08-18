@@ -10,6 +10,7 @@
 #include "options.h"
 #include "project.h"
 #include "selection_controller.h"
+#include "theme.h"
 
 #include <libaegisub/audio/provider.h>
 #include <libaegisub/dispatch.h>
@@ -1313,6 +1314,7 @@ public:
 				: _("Recognizing the Japanese audio and calculating romaji karaoke timing..."));
 		main->Add(status, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 12));
 		progress = new wxGauge(this, wxID_ANY, 100);
+		app_theme::StyleProgress(progress);
 		main->Add(progress, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 12));
 
 		style_panel = new wxPanel(this);

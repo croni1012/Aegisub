@@ -130,9 +130,19 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow *parent, wxSize size, long style, ag
 
 	OPT_SUB("Subtitle/Edit Box/Font Face", &SubsTextEditCtrl::SetStyles, this);
 	OPT_SUB("Subtitle/Edit Box/Font Size", &SubsTextEditCtrl::SetStyles, this);
-	for (auto name : {"Normal", "Comment", "Drawing Command", "Brackets", "Slashes", "Tags", "Error", "Parameters", "Line Break", "Karaoke Template", "Karaoke Variable"})
-		Subscribe(name);
+	Subscribe("Normal");
+	Subscribe("Comment");
+	Subscribe("Drawing Command");
 	OPT_SUB("Colour/Subtitle/Syntax/Underline/Drawing Endpoint", &SubsTextEditCtrl::SetStyles, this);
+	Subscribe("Brackets");
+	Subscribe("Slashes");
+	Subscribe("Tags");
+	Subscribe("Error");
+	Subscribe("Parameters");
+	Subscribe("Line Break");
+	Subscribe("Karaoke Template");
+	Subscribe("Karaoke Variable");
+
 	OPT_SUB(app_theme::ColourOption("Subtitle/Background"), &SubsTextEditCtrl::SetStyles, this);
 	OPT_SUB("Subtitle/Highlight/Syntax", &SubsTextEditCtrl::UpdateStyle, this);
 	OPT_SUB("App/Call Tips", &SubsTextEditCtrl::UpdateCallTip, this);

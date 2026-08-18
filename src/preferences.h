@@ -38,11 +38,13 @@ private:
 	std::map<std::string, std::unique_ptr<agi::OptionValue>> pending_changes;
 	std::vector<Thunk> pending_callbacks;
 	std::vector<std::string> option_names;
+	bool restart_requested = false;
 
 	void OnOK(wxCommandEvent &);
 	void OnCancel(wxCommandEvent &);
 	void OnApply(wxCommandEvent &);
 	void OnResetDefault(wxCommandEvent&);
+	void AskToRestartForAppearance();
 
 public:
 	Preferences(wxWindow *parent);
@@ -62,4 +64,6 @@ public:
 	/// simply revert to the default config file as a bunch of things other than
 	/// user options are stored in it. Perhaps that should change in the future.
 	void AddChangeableOption(std::string const& name);
+
+	bool ShouldRestart() const { return restart_requested; }
 };

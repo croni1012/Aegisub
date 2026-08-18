@@ -14,7 +14,13 @@
 
 #include "libresrc.h"
 
+#include "../theme.h"
+
+#include <algorithm>
+#include <cmath>
 #include <map>
+#include <tuple>
+#include <utility>
 
 #include <wx/bitmap.h>
 #include <wx/bmpbndl.h>
@@ -24,24 +30,61 @@
 #include <wx/intl.h>
 #include <wx/mstream.h>
 
-wxBitmap libresrc_getimage(const unsigned char *buff, size_t size, int dir) {
+namespace {
+void adapt_image_to_dark_theme(wxImage& image) {
+	if (!image.IsOk()) return;
+
+	auto data = image.GetData();
+	auto alpha = image.HasAlpha() ? image.GetAlpha() : nullptr;
+	auto pixels = static_cast<size_t>(image.GetWidth()) * image.GetHeight();
+	constexpr double cutoff = 192.0;
+	constexpr double target = 224.0;
+	constexpr double strength = 0.82;
+
+	for (size_t pixel = 0; pixel < pixels; ++pixel) {
+		if (alpha && alpha[pixel] == 0) continue;
+
+		auto rgb = data + pixel * 3;
+		double value = std::max({rgb[0], rgb[1], rgb[2]});
+		if (value >= cutoff) continue;
+
+		// Raise only dark colours. Scaling all channels equally preserves hue,
+		// while the original alpha keeps the source image's antialiased edges.
+		double amount = strength * (cutoff - value) / cutoff;
+		double new_value = value + (target - value) * amount;
+		if (value == 0.0) {
+			auto grey = static_cast<unsigned char>(std::lround(new_value));
+			rgb[0] = rgb[1] = rgb[2] = grey;
+		}
+		else {
+			double scale = new_value / value;
+			for (int channel = 0; channel < 3; ++channel)
+				rgb[channel] = static_cast<unsigned char>(std::lround(rgb[channel] * scale));
+		}
+	}
+}
+}
+
+wxBitmap libresrc_getimage(const unsigned char *buff, size_t size, int dir, bool adapt_to_dark_theme) {
 	wxMemoryInputStream mem(buff, size);
-	if (dir != wxLayout_RightToLeft)
-		return wxBitmap(wxImage(mem));
-	return wxBitmap(wxImage(mem).Mirror());
+	wxImage image(mem);
+	if (adapt_to_dark_theme && app_theme::IsDark())
+		adapt_image_to_dark_theme(image);
+	if (dir == wxLayout_RightToLeft)
+		image = image.Mirror();
+	return wxBitmap(image);
 }
 
 wxIcon libresrc_geticon(const unsigned char *buff, size_t size) {
-	wxMemoryInputStream mem(buff, size);
 	wxIcon icon;
-	icon.CopyFromBitmap(wxBitmap(wxImage(mem)));
+	icon.CopyFromBitmap(libresrc_getimage(buff, size));
 	return icon;
 }
 
 wxBitmapBundle libresrc_getbitmapbundle(const LibresrcBlob *images, size_t count, int height, int dir) {
 	// This function should only ever be called on the GUI thread but declaring this thread_local is the safe way
-	thread_local std::map<std::tuple<const LibresrcBlob *, int, int>, wxBitmapBundle> cache;
-	auto key = std::make_tuple(images, height, dir);
+	thread_local std::map<std::tuple<const LibresrcBlob *, int, int, bool>, wxBitmapBundle> cache;
+	auto key = std::make_tuple(images, height, dir, app_theme::IsDark());
 
 	if (auto cached = cache.find(key); cached != cache.end()) {
 		return cached->second;
@@ -61,9 +104,10 @@ wxBitmapBundle libresrc_getbitmapbundle(const LibresrcBlob *images, size_t count
 }
 
 wxIconBundle libresrc_geticonbundle(const LibresrcBlob *images, size_t count) {
-	thread_local std::map<const LibresrcBlob *, wxIconBundle> cache;
+	thread_local std::map<std::pair<const LibresrcBlob *, bool>, wxIconBundle> cache;
+	auto key = std::make_pair(images, app_theme::IsDark());
 
-	if (auto cached = cache.find(images); cached != cache.end()) {
+	if (auto cached = cache.find(key); cached != cache.end()) {
 		return cached->second;
 	}
 
@@ -72,7 +116,7 @@ wxIconBundle libresrc_geticonbundle(const LibresrcBlob *images, size_t count) {
 		bundle.AddIcon(libresrc_geticon(images[i].data, images[i].size));
 	}
 
-	cache[images] = bundle;
+	cache[key] = bundle;
 
 	return bundle;
 }

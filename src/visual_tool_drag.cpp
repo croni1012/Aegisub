@@ -62,7 +62,7 @@ namespace {
 		wxBitmap bitmap(size, size, 24);
 		wxMemoryDC dc(bitmap);
 		wxColour background = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
-		wxColour colour(20, 20, 20);
+		wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT);
 		dc.SetBackground(wxBrush(background));
 		dc.Clear();
 		dc.SetBrush(*wxTRANSPARENT_BRUSH);

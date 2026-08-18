@@ -11,6 +11,7 @@
 #include "dialog_progress.h"
 #include "format.h"
 #include "options.h"
+#include "theme.h"
 #include "video_frame.h"
 
 #include <boost/graph/adjacency_list.hpp>
@@ -3555,7 +3556,7 @@ wxBitmap MakeVisualSelectionModeBitmap(VisualSelectionMode mode, int size) {
 	dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE)));
 	dc.Clear();
 	int stroke = std::max(2, size / 8);
-	dc.SetPen(wxPen(wxColour(20, 20, 20), stroke));
+	dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT), stroke));
 	dc.SetBrush(*wxTRANSPARENT_BRUSH);
 	int centre = size / 2;
 	int a = std::max(2, size / 8);
@@ -3611,7 +3612,7 @@ wxBitmap MakeVisualVectorClipBrushBitmap(bool add, int size, bool dropdown) {
 		dc.DrawRectangle(size - corner, size - corner, corner, corner);
 		wxPoint triangle[]{{size - corner + 1, size - corner + 1},
 			{size - 1, size - corner + 1}, {size - 1, size - 1}};
-		dc.SetBrush(wxBrush(wxColour(25, 25, 25)));
+		dc.SetBrush(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
 		dc.DrawPolygon(3, triangle);
 	}
 	dc.SelectObject(wxNullBitmap);
@@ -3627,7 +3628,8 @@ wxBitmap MakeVisualRangeShapeBitmap(bool freehand, int size, bool dark) {
 	dc.Clear();
 	int thickness = std::max(1, size / 10);
 	dc.SetBrush(*wxTRANSPARENT_BRUSH);
-	wxColour foreground = dark ? wxColour(225, 225, 225) : wxColour(20, 20, 20);
+	wxColour foreground = (dark || app_theme::IsDark())
+		? wxColour(225, 225, 225) : wxColour(20, 20, 20);
 	if (!freehand) {
 		dc.SetPen(wxPen(foreground, thickness, wxPENSTYLE_SHORT_DASH));
 		int inset = std::max(2, size / 6);

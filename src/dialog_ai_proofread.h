@@ -16,3 +16,11 @@ namespace agi { struct Context; }
 void ShowAIProofreadDialog(agi::Context *context,
 	std::vector<AssDialogue *> target_lines,
 	std::vector<ai::SubtitleLine> context_lines);
+
+/// Whether the current subtitle has a completed AI analysis which can be
+/// reviewed again without making another network request.
+bool HasLatestAIProofread(agi::Context const *context);
+
+/// Replays the most recent AI post-check for the current subtitle without an
+/// API key or an active AI connection.
+void ShowLatestAIProofreadDialog(agi::Context *context);

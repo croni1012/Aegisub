@@ -88,7 +88,7 @@ namespace {
 		dc.DrawRectangle(size - corner, size - corner, corner, corner);
 		wxPoint triangle[]{{size - corner + 1, size - corner + 1},
 			{size - 1, size - corner + 1}, {size - 1, size - 1}};
-		dc.SetBrush(wxBrush(wxColour(20, 20, 20)));
+		dc.SetBrush(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
 		dc.DrawPolygon(3, triangle);
 		dc.SelectObject(wxNullBitmap);
 		return bitmap;

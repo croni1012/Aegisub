@@ -50,12 +50,16 @@
         { "command" : "edit/toggle_rtl_mode" }
     ],
     "main/ai" : [
-        { "command" : "ai/proofread" },
+		{ "submenu" : "main/ai/proofread", "text" : "AI post-check" },
         { "command" : "ai/review" },
 		{ "submenu" : "main/ai/karaoke", "text" : "Karaoke" },
         {},
         { "command" : "ai/configure" }
     ],
+	"main/ai/proofread" : [
+		{ "command" : "ai/proofread" },
+		{ "command" : "ai/proofread/latest" }
+	],
 	"main/ai/karaoke" : [
 		{ "command" : "ai/karaoke/recognition" },
 		{ "command" : "ai/karaoke/syllables" },

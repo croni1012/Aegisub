@@ -13,6 +13,7 @@
 #include "options.h"
 #include "project.h"
 #include "selection_controller.h"
+#include "theme.h"
 #include "video_controller.h"
 
 #include <libaegisub/character_count.h>
@@ -50,6 +51,43 @@ struct ProofreadOutcome {
 	std::string error;
 	ai::ProofreadResult result;
 };
+
+constexpr int decision_pending = -1;
+constexpr int decision_skipped = -2;
+
+struct ProofreadSession {
+	agi::Context const *context = nullptr;
+	ai::ProofreadResult result;
+	std::vector<ai::SubtitleLine> context_lines;
+	std::vector<int> decisions;
+};
+
+ProofreadSession latest_session;
+
+std::unordered_map<int, AssDialogue *> current_lines_by_id(agi::Context const *context) {
+	std::unordered_map<int, AssDialogue *> lines;
+	if (!context || !context->ass) return lines;
+	for (auto& line : context->ass->Events)
+		lines[line.Id] = &line;
+	return lines;
+}
+
+bool latest_session_applies_to(agi::Context const *context) {
+	if (latest_session.context != context || latest_session.context_lines.empty()) return false;
+	auto lines = current_lines_by_id(context);
+	if (latest_session.result.issues.empty())
+		return lines.count(latest_session.context_lines.front().id) != 0;
+	return std::all_of(latest_session.result.issues.begin(), latest_session.result.issues.end(),
+		[&](ai::ProofreadIssue const& issue) { return lines.count(issue.line_id) != 0; });
+}
+
+void remember_session(agi::Context const *context, ai::ProofreadResult const& result,
+	std::vector<ai::SubtitleLine> const& context_lines, std::vector<int> const& decisions) {
+	latest_session.context = context;
+	latest_session.result = result;
+	latest_session.context_lines = context_lines;
+	latest_session.decisions = decisions;
+}
 
 wxTextCtrl *make_readonly(wxWindow *parent, int height) {
 	auto text = new wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition,
@@ -213,8 +251,8 @@ class AIProofreadDialog final : public wxDialog {
 	bool busy = false;
 	bool reviewing = false;
 	bool close_when_idle = false;
-	static constexpr int decision_pending = -1;
-	static constexpr int decision_skipped = -2;
+	bool replaying = false;
+	std::vector<int> initial_decisions;
 
 	std::string ApiKey() const { return ai::GetApiKey(); }
 	std::string Model() const { return OPT_GET("AI/OpenAI/Model")->GetString(); }
@@ -312,6 +350,24 @@ class AIProofreadDialog final : public wxDialog {
 		});
 	}
 
+	void StartReplay() {
+		busy = false;
+		status->SetLabel(_("Replaying the latest AI post-check without an AI connection."));
+		progress->SetRange(std::max(1, static_cast<int>(result.issues.size())));
+		progress->SetValue(0);
+		if (result.issues.empty()) {
+			progress->SetValue(1);
+			wxMessageBox(result.message.empty()
+				? _("No clear spelling, style or consistency issue was found in the checked lines.")
+				: to_wx(result.message),
+				_("AI post-check"), wxOK | wxICON_INFORMATION, this);
+			EndModal(wxID_OK);
+			return;
+		}
+		reviewing = true;
+		ShowIssue();
+	}
+
 	void Fail(wxString const& message) {
 		busy = false;
 		reviewing = false;
@@ -358,6 +414,8 @@ class AIProofreadDialog final : public wxDialog {
 		}
 		result.issues = std::move(valid);
 		decisions.assign(result.issues.size(), decision_pending);
+		initial_decisions = decisions;
+		remember_session(context, result, context_lines, decisions);
 
 		if (result.issues.empty()) {
 			progress->SetRange(1);
@@ -395,6 +453,7 @@ class AIProofreadDialog final : public wxDialog {
 		auto end = format_timestamp(static_cast<int>(line->End));
 		line_heading->SetLabel(wxString::Format(_("Line %d   %s - %s"),
 			line->Row + 1, start.c_str(), end.c_str()));
+		bool previously_accepted = replaying && initial_decisions[issue_index] >= 0;
 		SetMinSize(FromDIP(wxSize(700, 600)));
 		SetSize(FromDIP(wxSize(900, 700)));
 		review_panel->Show();
@@ -402,7 +461,7 @@ class AIProofreadDialog final : public wxDialog {
 		back_button->Enable(issue_index > 0);
 		skip_button->Show();
 		apply_button->SetLabel(_("Approve selected correction"));
-		apply_button->Show();
+		apply_button->Show(!previously_accepted);
 		cancel_button->SetLabel(_("Cancel review"));
 		cancel_button->Show();
 
@@ -410,6 +469,14 @@ class AIProofreadDialog final : public wxDialog {
 		for (auto const& category : issue.categories) {
 			if (!categories.empty()) categories += "  |  ";
 			categories += category_name(category);
+		}
+		if (previously_accepted) {
+			if (!categories.empty()) categories += "  |  ";
+			categories += _("Previously accepted");
+			category_label->SetForegroundColour(wxColour(35, 135, 70));
+		}
+		else {
+			category_label->SetForegroundColour(wxColour(190, 85, 20));
 		}
 		category_label->SetLabel(categories);
 		explanation->SetValue(to_wx(issue.explanation));
@@ -421,13 +488,21 @@ class AIProofreadDialog final : public wxDialog {
 			auto display = agi::util::clean_ass_text(issue.suggestions[i]);
 			alternatives->Append(wxString::Format("%d. ", static_cast<int>(i + 1)) + to_wx(display));
 		}
-		alternatives->SetSelection(0);
+		int selection = previously_accepted ? initial_decisions[issue_index] : 0;
+		if (selection < 0 || selection >= static_cast<int>(issue.suggestions.size()))
+			selection = wxNOT_FOUND;
+		alternatives->SetSelection(selection);
+		alternatives->Enable(!previously_accepted);
 		UpdateSelection();
 		Layout();
 	}
 
 	void UpdateSelection() {
 		if (issue_index >= result.issues.size()) return;
+		if (replaying && initial_decisions[issue_index] >= 0) {
+			apply_button->Disable();
+			return;
+		}
 		auto selection = alternatives->GetSelection();
 		if (selection == wxNOT_FOUND) {
 			apply_button->Disable();
@@ -450,8 +525,10 @@ class AIProofreadDialog final : public wxDialog {
 
 	void Skip() {
 		StopPlayback();
-		decisions[issue_index] = decision_skipped;
-		++skipped;
+		if (!(replaying && initial_decisions[issue_index] >= 0)) {
+			decisions[issue_index] = decision_skipped;
+			++skipped;
+		}
 		++issue_index;
 		ShowIssue();
 	}
@@ -461,17 +538,18 @@ class AIProofreadDialog final : public wxDialog {
 		StopPlayback();
 		--issue_index;
 		auto decision = decisions[issue_index];
+		auto initial_decision = initial_decisions[issue_index];
 		auto const& issue = result.issues[issue_index];
 		auto line_it = line_by_id.find(issue.line_id);
-		if (decision >= 0) {
+		if (decision >= 0 && initial_decision < 0) {
 			if (line_it != line_by_id.end())
 				line_it->second->Text = original_text_by_id.at(issue.line_id);
 			--accepted;
 		}
-		else if (decision == decision_skipped) {
+		else if (decision == decision_skipped && initial_decision == decision_pending) {
 			--skipped;
 		}
-		decisions[issue_index] = decision_pending;
+		decisions[issue_index] = initial_decision;
 		ShowIssue();
 	}
 
@@ -481,17 +559,20 @@ class AIProofreadDialog final : public wxDialog {
 		progress->SetValue(progress->GetRange());
 		if (accepted > 0)
 			context->ass->Commit(_("apply AI post-check corrections"), AssFile::COMMIT_DIAG_TEXT);
+		remember_session(context, result, context_lines, decisions);
 		EndModal(wxID_OK);
 	}
 
 	void AbortReview() {
 		StopPlayback();
 		for (size_t i = 0; i < decisions.size(); ++i) {
-			if (decisions[i] < 0) continue;
+			if (decisions[i] < 0 || initial_decisions[i] >= 0) continue;
 			auto line_it = line_by_id.find(result.issues[i].line_id);
 			if (line_it != line_by_id.end())
 				line_it->second->Text = original_text_by_id.at(result.issues[i].line_id);
 		}
+		decisions = initial_decisions;
+		remember_session(context, result, context_lines, decisions);
 		reviewing = false;
 		EndModal(wxID_CANCEL);
 	}
@@ -523,13 +604,22 @@ class AIProofreadDialog final : public wxDialog {
 
 public:
 	AIProofreadDialog(agi::Context *context, std::vector<AssDialogue *> target_lines,
-		std::vector<ai::SubtitleLine> context_lines)
+		std::vector<ai::SubtitleLine> context_lines, bool replaying = false,
+		ai::ProofreadResult replay_result = {}, std::vector<int> replay_decisions = {})
 	: wxDialog(context->parent, wxID_ANY, _("AI post-check"), wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 	, context(context)
 	, target_lines(std::move(target_lines))
 	, context_lines(std::move(context_lines))
-	, pulse_timer(this) {
+	, pulse_timer(this)
+	, result(std::move(replay_result))
+	, decisions(std::move(replay_decisions))
+	, replaying(replaying) {
+		if (this->replaying) {
+			if (decisions.size() != result.issues.size())
+				decisions.assign(result.issues.size(), decision_pending);
+			initial_decisions = decisions;
+		}
 		for (auto line : this->target_lines) {
 			line_by_id[line->Id] = line;
 			original_text_by_id[line->Id] = line->Text.get();
@@ -551,6 +641,7 @@ public:
 		status = new wxStaticText(this, wxID_ANY, _("Preparing AI analysis..."));
 		analysis->Add(status, wxSizerFlags().Expand().Border(wxBOTTOM, 6));
 		progress = new wxGauge(this, wxID_ANY, 100, wxDefaultPosition, FromDIP(wxSize(-1, 12)));
+		app_theme::StyleProgress(progress);
 		analysis->Add(progress, wxSizerFlags().Expand());
 		main->Add(analysis, wxSizerFlags().Expand().Border(wxALL, 12));
 
@@ -639,7 +730,10 @@ public:
 		skip_button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Skip(); });
 		apply_button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Apply(); });
 		alternatives->Bind(wxEVT_LISTBOX, [this](wxCommandEvent&) { UpdateSelection(); });
-		CallAfter([this] { StartRequest(); });
+		CallAfter([this] {
+			if (this->replaying) StartReplay();
+			else StartRequest();
+		});
 	}
 };
 
@@ -649,5 +743,38 @@ void ShowAIProofreadDialog(agi::Context *context,
 	std::vector<AssDialogue *> target_lines,
 	std::vector<ai::SubtitleLine> context_lines) {
 	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines));
+	dialog.ShowModal();
+}
+
+bool HasLatestAIProofread(agi::Context const *context) {
+	return latest_session_applies_to(context);
+}
+
+void ShowLatestAIProofreadDialog(agi::Context *context) {
+	if (!latest_session_applies_to(context)) {
+		wxMessageBox(_("There is no latest AI post-check available for this subtitle."),
+			_("AI post-check"), wxOK | wxICON_INFORMATION, context->parent);
+		return;
+	}
+
+	auto lines_by_id = current_lines_by_id(context);
+	std::vector<AssDialogue *> target_lines;
+	auto context_lines = latest_session.context_lines;
+	for (auto& cached : context_lines) {
+		auto current = lines_by_id.find(cached.id);
+		if (current == lines_by_id.end()) continue;
+		auto line = current->second;
+		target_lines.push_back(line);
+		cached.start_ms = static_cast<int>(line->Start);
+		cached.end_ms = static_cast<int>(line->End);
+		cached.source_text = agi::util::clean_ass_text(line->SourceLineText.get());
+		cached.current_text = agi::util::clean_ass_text(line->GetStrippedText());
+		cached.actor = line->Actor.get();
+		cached.style = line->Style.get();
+		cached.ass_text = line->Text.get();
+	}
+
+	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines), true,
+		latest_session.result, latest_session.decisions);
 	dialog.ShowModal();
 }

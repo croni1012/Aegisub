@@ -31,9 +31,10 @@ class wxBitmapBundle;
 class wxIcon;
 class wxIconBundle;
 
-wxBitmap libresrc_getimage(const unsigned char *image, size_t size, int dir=0);
+wxBitmap libresrc_getimage(const unsigned char *image, size_t size, int dir=0, bool adapt_to_dark_theme=true);
 wxIcon libresrc_geticon(const unsigned char *image, size_t size);
 #define GETIMAGE(a) libresrc_getimage(a, sizeof(a))
+#define GETIMAGE_UNTHEMED(a) libresrc_getimage(a, sizeof(a), 0, false)
 
 #define GET_DEFAULT_CONFIG(a) std::string_view(reinterpret_cast<const char *>(a), sizeof(a))
 

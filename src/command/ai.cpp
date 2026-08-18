@@ -185,9 +185,9 @@ struct ai_review final : public cmd::Command {
 
 struct ai_proofread final : public cmd::Command {
 	CMD_NAME("ai/proofread")
-	STR_MENU("AI post-check...")
-	STR_DISP("AI post-check")
-	STR_HELP("Check spelling, wording and consistency, then approve corrections one by one")
+	STR_MENU("New")
+	STR_DISP("New AI post-check")
+	STR_HELP("Start a new AI post-check and approve corrections one by one")
 	CMD_TYPE(cmd::COMMAND_VALIDATE)
 
 	bool Validate(agi::Context const *c) override {
@@ -249,6 +249,22 @@ struct ai_proofread final : public cmd::Command {
 	}
 };
 
+struct ai_proofread_latest final : public cmd::Command {
+	CMD_NAME("ai/proofread/latest")
+	STR_MENU("Latest")
+	STR_DISP("Latest AI post-check")
+	STR_HELP("Review the latest AI post-check again without an active AI connection")
+	CMD_TYPE(cmd::COMMAND_VALIDATE)
+
+	bool Validate(agi::Context const *c) override {
+		return HasLatestAIProofread(c);
+	}
+
+	void operator()(agi::Context *c) override {
+		ShowLatestAIProofreadDialog(c);
+	}
+};
+
 template<ai::KaraokeMode Mode>
 struct ai_karaoke : public cmd::Command {
 	CMD_TYPE(cmd::COMMAND_VALIDATE)
@@ -290,6 +306,7 @@ void init_ai() {
 	reg(std::make_unique<ai_configure>());
 	reg(std::make_unique<ai_review>());
 	reg(std::make_unique<ai_proofread>());
+	reg(std::make_unique<ai_proofread_latest>());
 	reg(std::make_unique<ai_karaoke_recognition>());
 	reg(std::make_unique<ai_karaoke_syllables>());
 	reg(std::make_unique<ai_karaoke_kanji>());

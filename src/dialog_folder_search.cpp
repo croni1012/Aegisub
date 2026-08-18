@@ -6,6 +6,7 @@
 #include "include/aegisub/context.h"
 #include "string_codec.h"
 #include "subs_controller.h"
+#include "theme.h"
 #include "utils.h"
 
 #include <libaegisub/ass/uuencode.h>
@@ -347,7 +348,7 @@ class ResultsView final : public wxScrolledWindow {
 			if (part.empty()) return;
 			auto width = dc.GetTextExtent(part).x;
 			if (mark) {
-				dc.SetBrush(wxBrush(is_selected ? wxColour(255, 180, 70) : wxColour(255, 225, 90)));
+				dc.SetBrush(wxBrush(app_theme::Colour(is_selected ? "UI/Match Highlight Selected" : "UI/Match Highlight")));
 				dc.SetPen(*wxTRANSPARENT_PEN); dc.DrawRectangle(x, y, width, dc.GetCharHeight());
 			}
 			dc.DrawText(part, x, y); x += width;
@@ -362,7 +363,7 @@ class ResultsView final : public wxScrolledWindow {
 
 	void OnPaint(wxPaintEvent&) {
 		wxAutoBufferedPaintDC dc(this); PrepareDC(dc);
-		dc.SetBackground(wxBrush(wxColour(248, 249, 251))); dc.Clear();
+		dc.SetBackground(wxBrush(app_theme::Colour("UI/Background"))); dc.Clear();
 		int visible_top; CalcUnscrolledPosition(0, 0, nullptr, &visible_top);
 		int visible_bottom = visible_top + GetClientSize().y;
 		int width = ContentWidth(), margin = Margin();
@@ -374,9 +375,9 @@ class ResultsView final : public wxScrolledWindow {
 			auto const& file = *file_it;
 			if (file.y > visible_bottom) break;
 			if (file.y + FileHeight() >= visible_top) {
-				dc.SetBrush(wxBrush(wxColour(67, 76, 89))); dc.SetPen(*wxTRANSPARENT_PEN);
+				dc.SetBrush(wxBrush(app_theme::Colour("UI/File Header"))); dc.SetPen(*wxTRANSPARENT_PEN);
 				dc.DrawRoundedRectangle(margin, file.y, width - margin * 2, FileHeight(), FromDIP(4));
-				dc.SetFont(bold_font); dc.SetTextForeground(*wxWHITE);
+				dc.SetFont(bold_font); dc.SetTextForeground(app_theme::Colour("UI/File Header Text"));
 				dc.DrawText(file.path, margin + FromDIP(10), file.y + (FileHeight() - dc.GetCharHeight()) / 2);
 			}
 			auto first_match = std::upper_bound(file.matches.begin(), file.matches.end(), visible_top,
@@ -388,13 +389,13 @@ class ResultsView final : public wxScrolledWindow {
 				int bottom = match.y + MatchHeight() + ColumnsHeight() + static_cast<int>(match.rows.size()) * RowHeight();
 				if (bottom < visible_top) continue;
 				if (match.y > visible_bottom) break;
-				dc.SetBrush(wxBrush(wxColour(224, 229, 236))); dc.SetPen(wxPen(wxColour(165, 172, 181)));
+				dc.SetBrush(wxBrush(app_theme::Colour("UI/Match Header"))); dc.SetPen(wxPen(app_theme::Colour("UI/Row Border")));
 				dc.DrawRectangle(margin, match.y, width - margin * 2, MatchHeight());
-				dc.SetFont(bold_font); dc.SetTextForeground(wxColour(35, 39, 44));
+				dc.SetFont(bold_font); dc.SetTextForeground(app_theme::Colour("UI/Text"));
 				dc.DrawText(wxString::Format(_("Match %zu - Line %zu"), match_index + 1, match.match_line + 1),
 					margin + FromDIP(8), match.y + (MatchHeight() - dc.GetCharHeight()) / 2);
 				auto button = MatchButton(match);
-				dc.SetBrush(wxBrush(wxColour(245, 246, 248))); dc.SetPen(wxPen(wxColour(105, 112, 122)));
+				dc.SetBrush(wxBrush(app_theme::Colour("UI/Button"))); dc.SetPen(wxPen(app_theme::Colour("UI/Button Border")));
 				dc.DrawRoundedRectangle(button, FromDIP(3));
 				auto open_label = _("Open subtitle at match");
 				auto extent = dc.GetTextExtent(open_label);
@@ -405,7 +406,7 @@ class ResultsView final : public wxScrolledWindow {
 				int text_width = flexible / 2;
 				int xs[] = {margin, margin + FromDIP(100), margin + FromDIP(200), margin + FromDIP(345), margin + FromDIP(345) + text_width, width - margin};
 				wxString labels[] = {_("Start"), _("End"), _("Style"), _("Text"), _("Source Line")};
-				dc.SetBrush(wxBrush(wxColour(238, 241, 245))); dc.SetPen(wxPen(wxColour(185, 190, 197)));
+				dc.SetBrush(wxBrush(app_theme::Colour("UI/Column Header"))); dc.SetPen(wxPen(app_theme::Colour("UI/Row Border")));
 				dc.DrawRectangle(margin, columns_y, width - margin * 2, ColumnsHeight());
 				dc.SetFont(bold_font);
 				for (int col = 0; col < 5; ++col) {
@@ -416,9 +417,9 @@ class ResultsView final : public wxScrolledWindow {
 				for (size_t row_index = 0; row_index < match.rows.size(); ++row_index) {
 					auto const& row = match.rows[row_index]; int y = columns_y + ColumnsHeight() + static_cast<int>(row_index) * RowHeight();
 					bool is_selected = selected.contains(row.id);
-					dc.SetBrush(wxBrush(is_selected ? wxColour(62, 123, 190) : row.openable ? wxColour(255, 248, 220) : *wxWHITE));
-					dc.SetPen(wxPen(wxColour(205, 209, 215))); dc.DrawRectangle(margin, y, width - margin * 2, RowHeight());
-					dc.SetTextForeground(is_selected ? *wxWHITE : wxColour(35, 39, 44));
+					dc.SetBrush(wxBrush(app_theme::Colour(is_selected ? "UI/Selection" : row.openable ? "UI/Openable Row" : "UI/Row")));
+					dc.SetPen(wxPen(app_theme::Colour("UI/Row Border"))); dc.DrawRectangle(margin, y, width - margin * 2, RowHeight());
+					dc.SetTextForeground(app_theme::Colour(is_selected ? "UI/Selection Text" : "UI/Text"));
 					DrawTextCell(dc, wxRect(xs[0], y, xs[1] - xs[0], RowHeight()), row.start, nullptr, is_selected);
 					DrawTextCell(dc, wxRect(xs[1], y, xs[2] - xs[1], RowHeight()), row.end, nullptr, is_selected);
 					DrawTextCell(dc, wxRect(xs[2], y, xs[3] - xs[2], RowHeight()), row.style, nullptr, is_selected);
@@ -573,6 +574,7 @@ public:
 		match_case = new wxCheckBox(this, -1, _("&Match case")); whole_word = new wxCheckBox(this, -1, _("Match &whole word"));
 		regex = new wxCheckBox(this, -1, _("&Use regular expressions")); search = new wxButton(this, -1, _("&Search")); search->SetDefault();
 		stop = new wxButton(this, -1, _("S&top")); stop->Disable(); progress = new wxGauge(this, -1, 100); status = new wxStaticText(this, -1, _("Ready."));
+		app_theme::StyleProgress(progress);
 		progress->SetMinSize(FromDIP(wxSize(180, -1))); status->SetMinSize(FromDIP(wxSize(500, -1)));
 		results = new ResultsView(this);
 		results->SetSelectionChanged([this](wxString const& text, wxString const& raw) {

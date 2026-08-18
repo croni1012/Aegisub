@@ -10,6 +10,7 @@
 #include "include/aegisub/context.h"
 #include "options.h"
 #include "time_range.h"
+#include "theme.h"
 #include "video_controller.h"
 
 #include <libaegisub/dispatch.h>
@@ -477,6 +478,7 @@ public:
 		status_row->Add(cancel_request_button, wxSizerFlags().CenterVertical().Border(wxLEFT, 8));
 		status_box->Add(status_row, wxSizerFlags().Expand().Border(wxALL, 6));
 		progress = new wxGauge(status_box->GetStaticBox(), wxID_ANY, 100);
+		app_theme::StyleProgress(progress);
 		progress->Hide();
 		status_box->Add(progress, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 6));
 		main->Add(status_box, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 12));

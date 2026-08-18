@@ -18,6 +18,34 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: ../src/preferences.cpp:257
+msgid "Dark Mode"
+msgstr ""
+
+#: ../src/preferences.cpp:258
+msgid "Enable dark mode"
+msgstr ""
+
+#: ../src/preferences.cpp:352
+msgid "Dark Colors"
+msgstr ""
+
+#: ../src/preferences.cpp:358
+msgid "Progress"
+msgstr ""
+
+#: ../src/preferences.cpp:354
+msgid "Subtitle edit box"
+msgstr ""
+
+#: ../src/preferences.cpp:371
+msgid "Subtitle grid"
+msgstr ""
+
+#: ../src/preferences.cpp:790
+msgid "Aegisub needs to be restarted so that the new appearance can be applied. Restart now?"
+msgstr ""
+
 #: ../src/command/ai.cpp
 msgid "Fill from audio recognition..."
 msgstr ""

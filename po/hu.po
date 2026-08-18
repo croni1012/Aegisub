@@ -14,6 +14,38 @@ msgstr ""
 "X-Generator: Poedit 1.6.9\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: ../src/preferences.cpp:257
+msgid "Dark Mode"
+msgstr "Sötét mód"
+
+#: ../src/preferences.cpp:258
+msgid "Enable dark mode"
+msgstr "Sötét mód engedélyezése"
+
+#: ../src/preferences.cpp:352
+msgid "Dark Colors"
+msgstr "Sötét színek"
+
+#: ../src/preferences.cpp:358
+msgid "Progress"
+msgstr "Folyamatjelző"
+
+#: ../src/preferences.cpp:354
+msgid "Subtitle edit box"
+msgstr "Feliratszerkesztő"
+
+#: ../src/preferences.cpp:371
+msgid "Subtitle grid"
+msgstr "Felirattáblázat"
+
+#: ../src/preferences.cpp:790
+msgid "Aegisub needs to be restarted so that the new appearance can be applied. Restart now?"
+msgstr "Az új megjelenés alkalmazásához újra kell indítani az Aegisubot. Újraindítja most?"
+
+#: ../src/command/app.cpp:167 ../src/preferences.cpp:791
+msgid "Restart Aegisub?"
+msgstr "Újraindítja az Aegisubot?"
+
 #: ../src/ass_style.cpp:196
 msgid "Auto-detect base direction (libass only)"
 msgstr ""
@@ -7365,6 +7397,30 @@ msgstr "Az AI-válasz érvénytelen vagy ismétlődő feliratsorra hivatkozott."
 
 msgid "AI analysis in progress"
 msgstr "AI-elemzés folyamatban"
+
+msgid "Replaying the latest AI post-check without an AI connection."
+msgstr "A legutóbbi AI-utóellenőrzés ismételt átnézése AI-kapcsolat nélkül."
+
+msgid "Previously accepted"
+msgstr "Korábban elfogadva"
+
+msgid "There is no latest AI post-check available for this subtitle."
+msgstr "Ehhez a felirathoz nem érhető el legutóbbi AI-utóellenőrzés."
+
+msgid "New AI post-check"
+msgstr "Új AI-utóellenőrzés"
+
+msgid "Start a new AI post-check and approve corrections one by one"
+msgstr "Új AI-utóellenőrzés indítása, majd a javítások egyenkénti jóváhagyása"
+
+msgid "Latest"
+msgstr "Legutóbbi"
+
+msgid "Latest AI post-check"
+msgstr "Legutóbbi AI-utóellenőrzés"
+
+msgid "Review the latest AI post-check again without an active AI connection"
+msgstr "A legutóbbi AI-utóellenőrzés ismételt átnézése aktív AI-kapcsolat nélkül"
 
 msgid "Back"
 msgstr "Vissza"

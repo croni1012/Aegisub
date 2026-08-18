@@ -91,7 +91,7 @@ namespace {
 		int half_width = std::max(2, corner_size / 2 - 1);
 		wxPoint points[]{{right - half_width * 2, bottom - half_width * 2},
 			{right, bottom - half_width * 2}, {right - half_width, bottom}};
-		dc.SetBrush(*wxBLACK_BRUSH);
+		dc.SetBrush(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
 		dc.DrawPolygon(3, points);
 	}
 
@@ -103,7 +103,7 @@ namespace {
 		wxMemoryDC dc(bitmap);
 		dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE)));
 		dc.Clear();
-		wxColour colour(20, 20, 20);
+		wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT);
 		dc.SetPen(wxPen(colour, std::max(2, size / 7)));
 		dc.SetBrush(filled ? wxBrush(colour) : *wxTRANSPARENT_BRUSH);
 		int a = std::max(1, size / 10);
@@ -181,7 +181,7 @@ namespace {
 		wxMemoryDC dc(bitmap);
 		dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE)));
 		dc.Clear();
-		dc.SetPen(wxPen(wxColour(20, 20, 20), std::max(2, size / 8)));
+		dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT), std::max(2, size / 8)));
 		dc.SetBrush(*wxTRANSPARENT_BRUSH);
 		int a = std::max(1, size / 10);
 		int extent = std::max(4, size - a * 2 - 1);

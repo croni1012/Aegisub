@@ -25,6 +25,7 @@
 #include "libresrc/libresrc.h"
 #include "options.h"
 #include "selection_controller.h"
+#include "theme.h"
 
 #include <libaegisub/hotkey.h>
 #include <libaegisub/json.h>
@@ -37,6 +38,10 @@
 
 #include <wx/frame.h>
 #include <wx/toolbar.h>
+
+#ifdef __WXMSW__
+#include <commctrl.h>
+#endif
 
 namespace {
 	json::Object const& get_root() {
@@ -109,6 +114,34 @@ namespace {
 		void OnClick(wxCommandEvent &evt) {
 			(*commands[evt.GetId() - TOOL_ID_BASE])(context);
 		}
+
+#ifdef __WXMSW__
+		bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result) override {
+			bool const handled = wxToolBar::MSWOnNotify(idCtrl, lParam, result);
+			if (!app_theme::IsDark()) return handled;
+
+			auto *header = reinterpret_cast<NMHDR *>(lParam);
+			if (!header || header->code != NM_CUSTOMDRAW) return handled;
+
+			auto *draw = reinterpret_cast<NMTBCUSTOMDRAW *>(lParam);
+			if (draw->nmcd.dwDrawStage != CDDS_ITEMPREPAINT) return handled;
+
+			auto const background = GetBackgroundColour();
+			COLORREF const background_ref = RGB(background.Red(), background.Green(), background.Blue());
+			draw->clrBtnFace = background_ref;
+			draw->clrBtnHighlight = background_ref;
+			draw->clrHighlightHotTrack = background_ref;
+
+			if (draw->nmcd.uItemState & (CDIS_CHECKED | CDIS_SELECTED)) {
+				HBRUSH brush = ::CreateSolidBrush(background_ref);
+				::FillRect(draw->nmcd.hdc, &draw->nmcd.rc, brush);
+				::DeleteObject(brush);
+				*result |= TBCDRF_NOBACKGROUND;
+			}
+
+			return handled;
+		}
+#endif
 
 		/// Regenerate the toolbar when the icon size changes
 		void OnIconSizeChange(agi::OptionValue const& opt) {

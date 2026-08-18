@@ -48,6 +48,7 @@ class AegisubApp : public wxApp {
 	bool OnInit() override;
 	int OnExit() override;
 	int OnRun() override;
+	int FilterEvent(wxEvent& event) override;
 
 	void OnUnhandledException() override;
 	void OnFatalException() override;

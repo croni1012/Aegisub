@@ -137,13 +137,9 @@ FrameMain::FrameMain()
 	CreateStatusBar(2);
 
 	StartupLog("Set icon");
-#ifdef _WIN32
-	SetIcon(wxICON(wxicon));
-#else
 	wxIcon icon;
-	icon.CopyFromBitmap(GETIMAGE(wxicon));
+	icon.CopyFromBitmap(GETIMAGE_UNTHEMED(wxicon));
 	SetIcon(icon);
-#endif
 
 	StartupLog("Create views and inner main window controls");
 	InitContents();

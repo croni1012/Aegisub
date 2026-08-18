@@ -30,8 +30,10 @@
 #include "include/aegisub/hotkey.h"
 #include "include/aegisub/subtitles_provider.h"
 #include "libresrc/libresrc.h"
+#include "main.h"
 #include "options.h"
 #include "preferences_base.h"
+#include "utils.h"
 #include "video_provider_manager.h"
 
 #ifdef WITH_PORTAUDIO
@@ -252,9 +254,9 @@ void Interface(wxTreebook *book, Preferences *parent) {
 	auto visual_tools = p->PageSizer(_("Visual Tools"));
 	p->OptionAdd(visual_tools, _("Shape handle size"), "Tool/Visual/Shape Handle Size");
 
-#if defined(__WXMSW__) && wxVERSION_NUMBER >= 3300
+#if wxCHECK_VERSION(3, 3, 0)
 	auto dark_mode = p->PageSizer(_("Dark Mode"));
-	p->OptionAdd(dark_mode, _("Enable experimental dark mode (restart required)"), "App/Dark Mode");
+	p->OptionAdd(dark_mode, _("Enable dark mode"), "App/Dark Mode");
 #endif
 
 	p->SetSizerAndFit(p->sizer);
@@ -297,8 +299,6 @@ void Interface_Colours(wxTreebook *book, Preferences *parent) {
 	p->OptionAdd(syntax, _("Normal"), "Colour/Subtitle/Syntax/Normal");
 	p->OptionAdd(syntax, _("Comments"), "Colour/Subtitle/Syntax/Comment");
 	p->OptionAdd(syntax, _("Drawing Commands"), "Colour/Subtitle/Syntax/Drawing Command");
-	p->OptionAdd(syntax, _("Drawing X Coords"), "Colour/Subtitle/Syntax/Drawing X");
-	p->OptionAdd(syntax, _("Drawing Y Coords"), "Colour/Subtitle/Syntax/Drawing Y");
 	p->OptionAdd(syntax, _("Underline Spline Endpoints"), "Colour/Subtitle/Syntax/Underline/Drawing Endpoint");
 	p->CellSkip(syntax);
 	p->OptionAdd(syntax, _("Brackets"), "Colour/Subtitle/Syntax/Brackets");
@@ -349,6 +349,52 @@ void Interface_Colours(wxTreebook *book, Preferences *parent) {
 	p->OptionAdd(visual_tools_alpha, _("Shaded Area"), "Colour/Visual Tools/Shaded Area Alpha", 0, 1, 0.1);
 
 	p->sizer = main_sizer;
+
+	p->SetSizerAndFit(p->sizer);
+}
+
+/// Dark palette preferences subpage
+void Interface_DarkColours(wxTreebook *book, Preferences *parent) {
+	auto p = new OptionPage(book, parent, _("Dark Colors"), OptionPage::PAGE_SCROLL|OptionPage::PAGE_SUB);
+
+	auto dark_interface = p->PageSizer(_("Interface"));
+	p->OptionAdd(dark_interface, _("Text"), "Colour/Dark/UI/Text");
+	p->OptionAdd(dark_interface, _("Selection foreground"), "Colour/Dark/UI/Selection Text");
+	p->OptionAdd(dark_interface, _("Progress"), "Colour/Dark/UI/Progress");
+	p->OptionAdd(dark_interface, _("Background"), "Colour/Dark/UI/Progress Background");
+
+	auto dark_syntax = p->PageSizer(_("Subtitle edit box"));
+	p->OptionAdd(dark_syntax, _("Background"), "Colour/Dark/Subtitle/Background");
+	p->OptionAdd(dark_syntax, _("Normal"), "Colour/Dark/Subtitle/Syntax/Normal");
+	p->OptionAdd(dark_syntax, _("Comments"), "Colour/Dark/Subtitle/Syntax/Comment");
+	p->OptionAdd(dark_syntax, _("Drawing Commands"), "Colour/Dark/Subtitle/Syntax/Drawing Command");
+	p->OptionAdd(dark_syntax, _("Brackets"), "Colour/Dark/Subtitle/Syntax/Brackets");
+	p->OptionAdd(dark_syntax, _("Slashes and Parentheses"), "Colour/Dark/Subtitle/Syntax/Slashes");
+	p->OptionAdd(dark_syntax, _("Tags"), "Colour/Dark/Subtitle/Syntax/Tags");
+	p->OptionAdd(dark_syntax, _("Parameters"), "Colour/Dark/Subtitle/Syntax/Parameters");
+	p->OptionAdd(dark_syntax, _("Error"), "Colour/Dark/Subtitle/Syntax/Error");
+	p->OptionAdd(dark_syntax, _("Error Background"), "Colour/Dark/Subtitle/Syntax/Background/Error");
+	p->OptionAdd(dark_syntax, _("Line Break"), "Colour/Dark/Subtitle/Syntax/Line Break");
+	p->OptionAdd(dark_syntax, _("Karaoke templates"), "Colour/Dark/Subtitle/Syntax/Karaoke Template");
+	p->OptionAdd(dark_syntax, _("Karaoke variables"), "Colour/Dark/Subtitle/Syntax/Karaoke Variable");
+
+	auto dark_grid = p->PageSizer(_("Subtitle grid"));
+	p->OptionAdd(dark_grid, _("Standard foreground"), "Colour/Dark/Subtitle Grid/Standard");
+	p->OptionAdd(dark_grid, _("Standard background"), "Colour/Dark/Subtitle Grid/Background/Background");
+	p->OptionAdd(dark_grid, _("Selection foreground"), "Colour/Dark/Subtitle Grid/Selection");
+	p->OptionAdd(dark_grid, _("Selection background"), "Colour/Dark/Subtitle Grid/Background/Selection");
+	p->OptionAdd(dark_grid, _("Collision foreground"), "Colour/Dark/Subtitle Grid/Collision");
+	p->OptionAdd(dark_grid, _("In frame background"), "Colour/Dark/Subtitle Grid/Background/Inframe");
+	p->OptionAdd(dark_grid, _("Comment background"), "Colour/Dark/Subtitle Grid/Background/Comment");
+	p->OptionAdd(dark_grid, _("Selected comment background"), "Colour/Dark/Subtitle Grid/Background/Selected Comment");
+	p->OptionAdd(dark_grid, _("Open fold background"), "Colour/Dark/Subtitle Grid/Background/Open Fold");
+	p->OptionAdd(dark_grid, _("Closed fold background"), "Colour/Dark/Subtitle Grid/Background/Closed Fold");
+	p->OptionAdd(dark_grid, _("Combined Group Background"), "Colour/Dark/Subtitle Grid/Background/Image Mask");
+	p->OptionAdd(dark_grid, _("Header background"), "Colour/Dark/Subtitle Grid/Header");
+	p->OptionAdd(dark_grid, _("Left Column"), "Colour/Dark/Subtitle Grid/Left Column");
+	p->OptionAdd(dark_grid, _("Active Line Border"), "Colour/Dark/Subtitle Grid/Active Border");
+	p->OptionAdd(dark_grid, _("Lines"), "Colour/Dark/Subtitle Grid/Lines");
+	p->OptionAdd(dark_grid, _("CPS Error"), "Colour/Dark/Subtitle Grid/CPS Error");
 
 	p->SetSizerAndFit(p->sizer);
 }
@@ -723,10 +769,15 @@ void Preferences::AddChangeableOption(std::string const& name) {
 
 void Preferences::OnOK(wxCommandEvent &event) {
 	OnApply(event);
-	EndModal(0);
+	if (IsModal())
+		EndModal(0);
 }
 
 void Preferences::OnApply(wxCommandEvent &) {
+	bool appearance_changed = false;
+	if (auto it = pending_changes.find("App/Dark Mode"); it != pending_changes.end())
+		appearance_changed = it->second->GetBool() != OPT_GET("App/Dark Mode")->GetBool();
+
 	for (auto const& change : pending_changes)
 		OPT_SET(change.first)->Set(change.second.get());
 	pending_changes.clear();
@@ -737,12 +788,27 @@ void Preferences::OnApply(wxCommandEvent &) {
 
 	applyButton->Enable(false);
 	config::opt->Flush();
+
+	if (appearance_changed)
+		AskToRestartForAppearance();
+}
+
+void Preferences::AskToRestartForAppearance() {
+	if (wxYES != wxMessageBox(
+		_("Aegisub needs to be restarted so that the new appearance can be applied. Restart now?"),
+		_("Restart Aegisub?"), wxYES_NO | wxICON_QUESTION | wxCENTER, this))
+		return;
+
+	restart_requested = true;
+	if (IsModal())
+		EndModal(0);
 }
 
 void Preferences::OnResetDefault(wxCommandEvent&) {
 	if (wxYES != wxMessageBox(_("Are you sure that you want to restore the defaults? All your settings will be overridden."), _("Restore defaults?"), wxYES_NO))
 		return;
 
+	bool old_dark_mode = OPT_GET("App/Dark Mode")->GetBool();
 	for (auto const& opt_name : option_names) {
 		agi::OptionValue *opt = OPT_SET(opt_name);
 		if (!opt->IsDefault())
@@ -752,6 +818,12 @@ void Preferences::OnResetDefault(wxCommandEvent&) {
 
 	agi::hotkey::Hotkey def_hotkeys("", GET_DEFAULT_CONFIG(default_hotkey));
 	hotkey::inst->SetHotkeyMap(def_hotkeys.GetHotkeyMap());
+
+	if (old_dark_mode != OPT_GET("App/Dark Mode")->GetBool()) {
+		AskToRestartForAppearance();
+		if (restart_requested)
+			return;
+	}
 
 	// Close and reopen the dialog to update all the controls with the new values
 	OPT_SET("Tool/Preferences/Page")->SetInt(book->GetSelection());
@@ -769,6 +841,7 @@ Preferences::Preferences(wxWindow *parent): wxDialog(parent, -1, _("Preferences"
 	Interface(book, this);
 	Interface_FontPicker(book, this);
 	Interface_Colours(book, this);
+	Interface_DarkColours(book, this);
 	new Interface_Hotkeys(book, this);
 	Backup(book, this);
 	Automation(book, this);
@@ -809,5 +882,15 @@ Preferences::Preferences(wxWindow *parent): wxDialog(parent, -1, _("Preferences"
 }
 
 void ShowPreferences(wxWindow *parent) {
-	while (Preferences(parent).ShowModal() < 0);
+	for (;;) {
+		Preferences preferences(parent);
+		int result = preferences.ShowModal();
+		if (preferences.ShouldRestart()) {
+			if (wxGetApp().CloseAll())
+				RestartAegisub();
+			return;
+		}
+		if (result >= 0)
+			return;
+	}
 }

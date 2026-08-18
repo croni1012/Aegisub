@@ -41,6 +41,7 @@
 #include "include/aegisub/hotkey.h"
 #include "options.h"
 #include "project.h"
+#include "theme.h"
 #include "utils.h"
 #include "video_controller.h"
 
@@ -939,7 +940,7 @@ void AudioDisplay::PaintLabels(wxDC &dc, TimeRange updtime)
 	wxFont font = dc.GetFont();
 	font.SetWeight(wxFONTWEIGHT_BOLD);
 	fc.Set(font);
-	dc.SetTextForeground(*wxWHITE);
+	dc.SetTextForeground(app_theme::IsDark() ? app_theme::Colour("UI/Text") : *wxWHITE);
 	for (auto const& label : labels)
 	{
 		wxSize extent = dc.GetTextExtent(label.text);
@@ -990,7 +991,7 @@ void AudioDisplay::PaintTrackCursor(wxDC &dc) {
 	dc.DrawText(track_cursor_label, label_pos.x-1, label_pos.y-1);
 
 	// Draw fill
-	dc.SetTextForeground(*wxWHITE);
+	dc.SetTextForeground(app_theme::IsDark() ? app_theme::Colour("UI/Text") : *wxWHITE);
 	dc.DrawText(track_cursor_label, label_pos.x, label_pos.y);
 	dc.SetBackgroundMode(old_bg_mode);
 
