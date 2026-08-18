@@ -32,9 +32,9 @@
 #include <utility>
 #include <vector>
 #include <wx/textctrl.h>
+#include <wx/tipwin.h>
 
 class Thesaurus;
-class wxTipWindow;
 namespace agi {
 	class SpellChecker;
 	struct Context;
@@ -72,7 +72,7 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	std::string calltip_text;
 	size_t calltip_position = 0;
 	long cursor_pos = -1;
-	wxTipWindow *calltip = nullptr;
+	wxTipWindow::Ref calltip;
 	bool styling = false;
 
 	void OnContextMenu(wxContextMenuEvent &);

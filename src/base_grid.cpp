@@ -59,8 +59,6 @@
 #include <wx/menu.h>
 #include <wx/scrolbar.h>
 #include <wx/sizer.h>
-#include <wx/stc/stc.h>
-#include <wx/textctrl.h>
 
 static bool IsMaskLine(const AssDialogue* d) {
 	const std::string& raw = d->Text.get();
@@ -294,7 +292,6 @@ void BaseGrid::OnActiveLineChanged(AssDialogue *new_active) {
 		MakeActiveLineVisible();
 
 		extendRow = active_row = new_active->Row;
-
 		Refresh(false);
 	}
 	else

@@ -259,7 +259,7 @@ void DialogTranslation::UpdateDisplay() {
 }
 
 void DialogTranslation::Commit(bool next) {
-	std::string new_value = translated_text->GetValue().utf8_str();
+	std::string new_value = from_wx(translated_text->GetValue());
 	boost::replace_all(new_value, "\r\n", "\\N");
 	boost::replace_all(new_value, "\r", "\\N");
 	boost::replace_all(new_value, "\n", "\\N");

@@ -131,9 +131,6 @@ aegisub_src = files(
     'subs_controller.cpp',
     'subs_edit_box.cpp',
     'subs_edit_ctrl.cpp',
-)
-
-aegisub_src += files(
     'subs_preview.cpp',
     'subtitle_format.cpp',
     'subtitle_format_ass.cpp',
@@ -200,7 +197,6 @@ if host_machine.system() == 'darwin'
         'font_file_lister_coretext.mm',
         'osx/osx_utils.mm',
     )
-
 elif host_machine.system() == 'windows'
     aegisub_src += files(
         'avisynth_wrap.cpp',
