@@ -34,6 +34,7 @@
 #include <wx/textctrl.h>
 
 class Thesaurus;
+class wxTipWindow;
 namespace agi {
 	class SpellChecker;
 	struct Context;
@@ -41,8 +42,7 @@ namespace agi {
 }
 
 /// @class SubsTextEditCtrl
-/// @brief A native wxTextCtrl with spell checking and thesaurus support
-/// Provides basic text editing without syntax highlighting (for RTL and platform integration)
+/// @brief Native subtitle editor with bidi text, spell checking and syntax highlighting
 class SubsTextEditCtrl final : public wxTextCtrl {
 	/// Backend spellchecker to use
 	std::unique_ptr<agi::SpellChecker> spellchecker;
@@ -57,7 +57,7 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	std::string currentWord;
 
 	/// The beginning of the word right-clicked on, for spellchecker replacing
-	std::pair<int, int> currentWordPos;
+	std::pair<long, long> currentWordPos;
 
 	/// Spellchecker suggestions for the last right-clicked word
 	std::vector<std::string> sugs;
@@ -65,12 +65,30 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	/// Thesaurus suggestions for the last right-clicked word
 	std::vector<std::string> thesSugs;
 
+	/// UTF-8 text and tokens used by syntax highlighting, spell checking and calltips
+	std::string line_text;
+	std::vector<agi::ass::DialogueToken> tokenized_line;
+
+	std::string calltip_text;
+	size_t calltip_position = 0;
+	long cursor_pos = -1;
+	wxTipWindow *calltip = nullptr;
+	bool styling = false;
+
 	void OnContextMenu(wxContextMenuEvent &);
 	void OnKeyDown(wxKeyEvent &event);
+	void OnText(wxCommandEvent &event);
+	void OnLoseFocus(wxFocusEvent &event);
 	void OnToggleRTL(wxCommandEvent &event);
 	void OnUseSuggestion(wxCommandEvent &event);
 	void OnSetDicLanguage(wxCommandEvent &event);
 	void OnSetThesLanguage(wxCommandEvent &event);
+	void SetStyles();
+	void UpdateStyle();
+	void UpdateCallTip();
+	void CloseCallTip();
+	void Subscribe(std::string const& name);
+	wxTextAttr SyntaxStyle(int id, wxFont const& font, wxColour const& default_background) const;
 
 	/// Add the thesaurus suggestions to a menu
 	void AddThesaurusEntries(wxMenu &menu);
@@ -91,5 +109,5 @@ public:
 	void SetTextTo(std::string const& text);
 	void Paste() override;
 
-	std::pair<int, int> GetBoundsOfWordAtPosition(int pos);
+	std::pair<long, long> GetBoundsOfWordAtPosition(long pos);
 };

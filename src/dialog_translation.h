@@ -26,7 +26,6 @@ class AssDialogue;
 class AssDialogueBlock;
 class PersistLocation;
 class SubsTextEditCtrl;
-class SubsStyledTextEditCtrl;
 class wxCheckBox;
 class wxStaticText;
 class wxStyledTextCtrl;
@@ -53,11 +52,7 @@ class DialogTranslation final : public wxDialog {
 
 	wxStaticText *line_number_display;
 	wxStyledTextCtrl *original_text;
-    
-	#ifdef WITH_WXSTC
-		SubsStyledTextEditCtrl *translated_text_stc;
-	#endif
-		SubsTextEditCtrl *translated_text;
+	SubsTextEditCtrl *translated_text;
 	wxCheckBox *seek_video;
 
 	std::unique_ptr<PersistLocation> persist;

@@ -293,31 +293,6 @@ void BaseGrid::OnActiveLineChanged(AssDialogue *new_active) {
 
 		extendRow = active_row = new_active->Row;
 
-		// On Ubuntu and macOS, auto-sync grid RTL mode with the active editor.
-		// wxWidgets auto-detects RTL for text controls, so we sync the grid to match.
-#if defined(__WXGTK__) || defined(__WXMAC__)
-		if (context && context->parent) {
-			wxWindow *editor = nullptr;
-			for (wxWindow *win : context->parent->GetChildren()) {
-				if (dynamic_cast<wxTextCtrl*>(win) || dynamic_cast<wxStyledTextCtrl*>(win)) {
-					editor = win;
-					break;
-				}
-			}
-
-			if (editor) {
-				wxLayoutDirection editor_dir = editor->GetLayoutDirection();
-				bool grid_rtl = (GetLayoutDirection() == wxLayout_RightToLeft);
-				bool editor_rtl = (editor_dir == wxLayout_RightToLeft);
-
-				if (editor_rtl != grid_rtl) {
-					OPT_SET("Subtitle/Grid/RTL Mode")->SetBool(editor_rtl);
-					SetLayoutDirection(editor_rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
-				}
-			}
-		}
-#endif
-
 		Refresh(false);
 	}
 	else

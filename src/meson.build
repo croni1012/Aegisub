@@ -133,10 +133,6 @@ aegisub_src = files(
     'subs_edit_ctrl.cpp',
 )
 
-if conf.has('WITH_WXSTC')
-    aegisub_src += files('subs_edit_ctrl_stc.cpp')
-endif
-
 aegisub_src += files(
     'subs_preview.cpp',
     'subtitle_format.cpp',
@@ -204,9 +200,6 @@ if host_machine.system() == 'darwin'
         'osx/osx_utils.mm',
     )
 
-    if conf.has('WITH_WXSTC')
-        aegisub_src += files('osx/scintilla_ime.mm')
-    endif
 elif host_machine.system() == 'windows'
     aegisub_src += files(
         'avisynth_wrap.cpp',

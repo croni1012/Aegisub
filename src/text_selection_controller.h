@@ -1,74 +1,42 @@
 // Copyright (c) 2014, Thomas Goyne <plorkyeran@aegisub.org>
-//
-// Permission to use, copy, modify, and distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
-//
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-//
-// Aegisub Project http://www.aegisub.org/
+// Permission to use, copy, modify, and distribute this software for any purpose
+// with or without fee is hereby granted.
 
 #include <libaegisub/signal.h>
 
-#include <wx/stc/stc.h>
-#include <wx/textctrl.h>
-
-class wxStyledTextEvent;
 class wxEvent;
+class wxTextCtrl;
 
 class TextSelectionController {
 	long selection_start = 0;
 	long selection_end = 0;
 	long insertion_point = 0;
 	bool changing = false;
-
 	long staged_selection_start = 0;
 	long staged_selection_end = 0;
 	bool has_staged_selection = false;
-
-	// Pointers to the current controls (either wxStyledTextCtrl or wxTextCtrl)
-	wxStyledTextCtrl *ctrl_stc = nullptr;
-	wxTextCtrl *ctrl_te = nullptr;
-#ifdef WITH_WXSTC
-	bool use_stc = true;
-#endif
+	wxTextCtrl *ctrl = nullptr;
 
 	void UpdateUI(wxEvent &evt);
-
 	agi::signal::Signal<> AnnounceSelectionChanged;
 
 public:
 	void SetSelection(long start, long end);
 	void SetInsertionPoint(long point);
-
-	// This set of functions allows staging changes to the selection or insertion points, which can then be applied later.
-	// This is useful when one is still waiting on other changes to be applied, but already listening for changes to the
-	// selection in the eventually visible text.
-	// They also provide a wrapper for setting a selection whose insertion point is on the left side.
-	void StageSetSelection(long start, long end) { staged_selection_start = start; staged_selection_end = end; has_staged_selection = true; };
-	void StageSetInsertionPoint(long point) { StageSetSelection(point, point); };
+	void StageSetSelection(long start, long end) { staged_selection_start = start; staged_selection_end = end; has_staged_selection = true; }
+	void StageSetInsertionPoint(long point) { StageSetSelection(point, point); }
 	void CommitStagedChanges();
-	void DropStagedChanges() { has_staged_selection = false; };
+	void DropStagedChanges() { has_staged_selection = false; }
 
 	long GetSelectionStart() const { return selection_start; }
 	long GetSelectionEnd() const { return selection_end; }
 	long GetInsertionPoint() const { return insertion_point; }
-
 	long GetStagedSelectionStart() const { return has_staged_selection ? staged_selection_start : selection_start; }
 	long GetStagedSelectionEnd() const { return has_staged_selection ? staged_selection_end : selection_end; }
 	long GetStagedInsertionPoint() const { return has_staged_selection ? staged_selection_end : insertion_point; }
 
-	wxStyledTextCtrl *GetControl() const { return ctrl_stc; }
-	wxTextCtrl *GetTextControl() const { return ctrl_te; }
-
-	void SetControl(wxStyledTextCtrl* ctrl);
-	void SetControl(wxTextCtrl* ctrl);
+	wxTextCtrl *GetControl() const { return ctrl; }
+	void SetControl(wxTextCtrl *control);
 	~TextSelectionController();
 
 	DEFINE_SIGNAL_ADDERS(AnnounceSelectionChanged, AddSelectionListener)
