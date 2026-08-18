@@ -7,7 +7,7 @@ on:
   push:
     tags: [ 'v*' ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, migration03 ]
   workflow_dispatch:
 
 jobs:
