@@ -237,12 +237,23 @@ void SubsTextEditCtrl::SetTextDirection(bool rtl) {
 	SetLayoutDirection(rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 	UpdateStyle();
 	Refresh();
+
+	// Changing the native RichEdit window direction queues additional layout
+	// work on Windows. Reapply the character styles once that work has run, or
+	// the old direction's formatting can remain on part of the line until the
+	// text is edited again.
+	CallAfter([this, rtl] {
+		if (right_to_left != rtl) return;
+		UpdateStyle();
+		Refresh();
+	});
 }
 
 void SubsTextEditCtrl::ApplyTextDirection() {
 #ifdef __WXMSW__
 	// wxTextCtrl updates the window direction, but RichEdit keeps its paragraph
-	// direction separately. Syntax styling can overwrite it, so apply this last.
+	// direction separately. Apply it before character styling so paragraph
+	// formatting cannot clear colours from an already-highlighted range.
 	long selection_start, selection_end;
 	GetSelection(&selection_start, &selection_end);
 	SetSelection(0, GetLastPosition());
@@ -277,6 +288,7 @@ void SubsTextEditCtrl::UpdateStyle() {
 	wxColour background = app_theme::Colour("Subtitle/Background");
 	auto normal = SyntaxStyle(agi::ass::SyntaxStyle::NORMAL, font, background);
 	SetDefaultStyle(normal);
+	ApplyTextDirection();
 	SetStyle(0, GetLastPosition(), normal);
 	if (OPT_GET("Subtitle/Highlight/Syntax")->GetBool()) {
 		size_t byte_position = 0;
@@ -297,7 +309,6 @@ void SubsTextEditCtrl::UpdateStyle() {
 	SetStyle(insertion_point, insertion_point, normal);
 	SetSelection(selection_start, selection_end);
 	if (selection_start == selection_end) SetInsertionPoint(insertion_point);
-	ApplyTextDirection();
 	styling = false;
 	UpdateCallTip();
 }
