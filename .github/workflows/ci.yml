@@ -5,9 +5,9 @@ permissions:
 
 on:
   push:
-    tags: [ 'v*' ]
+    tags: [ 'master', 'migration03*', 'codex/pr2-single-editor' ]
   pull_request:
-    branches: [ master, migration03 ]
+    branches: [ master, migration03, codex/pr2-single-editor ]
   workflow_dispatch:
 
 jobs:
