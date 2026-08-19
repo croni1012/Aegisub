@@ -74,7 +74,6 @@ private:
 	bool leaving = false;
 	bool mouse_selecting = false;
 	bool caret_visible = true;
-	bool right_to_left = false;
 	wxTimer caret_timer;
 	size_t caret = 0;
 	size_t anchor = 0;

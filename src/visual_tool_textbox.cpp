@@ -18,7 +18,6 @@
 #include "include/aegisub/context.h"
 #include "line_change_flags.h"
 #include "libresrc/libresrc.h"
-#include "options.h"
 #include "project.h"
 #include "selection_controller.h"
 #include "typesetting_transform.h"
@@ -27,8 +26,6 @@
 
 #include <libaegisub/color.h>
 #include <libaegisub/util.h>
-
-#include <fribidi.h>
 
 #include <algorithm>
 #include <cmath>
@@ -95,51 +92,6 @@ bool IsIconButton(VisualToolTextBox::Action action) {
 		action == VisualToolTextBox::Action::AlignRight || action == VisualToolTextBox::Action::AlignJustified;
 }
 
-void ApplyRightToLeftLayout(typesetting::textbox::Document const& document,
-	std::vector<typesetting::textbox::LayoutRow>& rows) {
-	for (auto& row : rows) {
-		size_t length = row.end - row.start;
-		if (!length || row.carets.size() != length + 1) continue;
-
-		std::vector<FriBidiChar> logical(length);
-		for (size_t i = 0; i < length; ++i)
-			logical[i] = static_cast<FriBidiChar>(document.text[row.start + i].GetValue());
-		std::vector<FriBidiStrIndex> logical_to_visual(length);
-		std::vector<FriBidiStrIndex> visual_to_logical(length);
-		std::vector<FriBidiLevel> levels(length);
-		FriBidiParType base_direction = FRIBIDI_PAR_RTL;
-		if (!fribidi_log2vis(logical.data(), static_cast<FriBidiStrIndex>(length),
-			&base_direction, nullptr, logical_to_visual.data(), visual_to_logical.data(),
-			levels.data())) {
-			double left = row.carets.front();
-			double right = row.carets.back();
-			for (double& x : row.carets) x = left + right - x;
-			continue;
-		}
-
-		std::vector<double> logical_widths(length);
-		for (size_t i = 0; i < length; ++i)
-			logical_widths[i] = row.carets[i + 1] - row.carets[i];
-		std::vector<double> visual_carets(length + 1, row.carets.front());
-		for (size_t visual = 0; visual < length; ++visual) {
-			size_t logical_index = static_cast<size_t>(visual_to_logical[visual]);
-			visual_carets[visual + 1] = visual_carets[visual] + logical_widths[logical_index];
-		}
-
-		row.character_bounds.resize(length);
-		for (size_t logical_index = 0; logical_index < length; ++logical_index) {
-			size_t visual = static_cast<size_t>(logical_to_visual[logical_index]);
-			row.character_bounds[logical_index] =
-				{visual_carets[visual], visual_carets[visual + 1]};
-			row.carets[logical_index] = levels[logical_index] & 1 ?
-				visual_carets[visual + 1] : visual_carets[visual];
-		}
-		size_t last_visual = static_cast<size_t>(logical_to_visual[length - 1]);
-		row.carets[length] = levels[length - 1] & 1 ?
-			visual_carets[last_visual] : visual_carets[last_visual + 1];
-	}
-}
-
 std::pair<double, double> SliderRange(VisualToolTextBox::Action action) {
 	if (action == VisualToolTextBox::Action::LineSpacing) return {-100.0, 200.0};
 	if (action == VisualToolTextBox::Action::Padding) return {0.0, 200.0};
@@ -165,14 +117,6 @@ VisualToolTextBox::VisualToolTextBox(VideoDisplay *parent, agi::Context *context
 , gl_text(std::make_unique<OpenGLText>())
 , return_tool(std::move(return_tool)) {
 	if (this->return_tool == "video/tool/textbox") this->return_tool = "video/tool/cross";
-	right_to_left = OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool();
-	connections.push_back(OPT_SUB("Subtitle/Edit Box/RTL Mode", [this](agi::OptionValue const& value) {
-		right_to_left = value.GetBool();
-		if (right_to_left && document.alignment == typesetting::textbox::Alignment::Left)
-			document.alignment = typesetting::textbox::Alignment::Right;
-		if (active && !waiting_for_box) UpdatePreview();
-		else this->parent->Render();
-	}));
 	primary_icon = GETBUNDLE(button_color_one, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
 	outline_icon = GETBUNDLE(button_color_three, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
 	shadow_icon = GETBUNDLE(button_color_four, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
@@ -220,8 +164,6 @@ void VisualToolTextBox::Load(bool create_new) {
 		if (original_lines.empty()) return;
 		prototype = std::make_unique<AssDialogue>(*original_lines.front());
 		document = typesetting::textbox::FromSelection(c, original_lines);
-		if (right_to_left && document.alignment == typesetting::textbox::Alignment::Left)
-			document.alignment = typesetting::textbox::Alignment::Right;
 		caret = anchor = document.text.length();
 		waiting_for_box = true;
 		active = true;
@@ -238,8 +180,6 @@ void VisualToolTextBox::Load(bool create_new) {
 	if (!loaded) return;
 	prototype = std::make_unique<AssDialogue>(*group_anchor);
 	document = std::move(*loaded);
-	if (right_to_left && document.alignment == typesetting::textbox::Alignment::Left)
-		document.alignment = typesetting::textbox::Alignment::Right;
 	caret = anchor = document.text.length();
 	active = true;
 	UpdatePreview();
@@ -305,7 +245,6 @@ void VisualToolTextBox::UpdatePreview() {
 	layout.clear();
 	if (!waiting_for_box) {
 		auto generated = typesetting::textbox::Generate(c, *prototype, document, &layout);
-		if (right_to_left) ApplyRightToLeftLayout(document, layout);
 		Vector2D corners[4];
 		typesetting::textbox::Corners(document, corners);
 		AssDialogue background(*prototype);
@@ -477,7 +416,6 @@ void VisualToolTextBox::ResetCaretBlink() {
 }
 
 void VisualToolTextBox::MoveCaret(long amount, bool selecting) {
-	if (right_to_left) amount = -amount;
 	long next = std::clamp<long>(static_cast<long>(caret) + amount, 0,
 		static_cast<long>(document.text.length()));
 	caret = static_cast<size_t>(next);
@@ -510,7 +448,7 @@ void VisualToolTextBox::MoveCaretVertical(int direction, bool selecting) {
 void VisualToolTextBox::MoveCaretToRowEdge(bool end, bool selecting) {
 	for (auto const& row : layout) {
 		if (caret < row.start || caret > row.end) continue;
-		caret = end != right_to_left ? row.end : row.start;
+		caret = end ? row.end : row.start;
 		if (!selecting) anchor = caret;
 		parent->Render();
 		return;
@@ -1587,30 +1525,15 @@ void VisualToolTextBox::DrawRectangleAndSelection() {
 			size_t start = std::max(selected_start, row.start);
 			size_t end = std::min(selected_end, row.end);
 			if (start >= end || row.carets.empty()) continue;
-			auto draw_selection = [&](double x1, double x2) {
-				if (x2 < x1) std::swap(x1, x2);
-				Vector2D selected[4] = {
-					FromDocumentCoords(Vector2D(static_cast<float>(x1), static_cast<float>(row.y))),
-					FromDocumentCoords(Vector2D(static_cast<float>(x2), static_cast<float>(row.y))),
-					FromDocumentCoords(Vector2D(static_cast<float>(x2), static_cast<float>(row.y + row.height))),
-					FromDocumentCoords(Vector2D(static_cast<float>(x1), static_cast<float>(row.y + row.height)))};
-				gl.DrawTriangle(selected[0], selected[1], selected[2]);
-				gl.DrawTriangle(selected[0], selected[2], selected[3]);
-			};
-			if (row.character_bounds.size() == row.end - row.start) {
-				std::vector<std::pair<double, double>> bounds;
-				for (size_t i = start; i < end; ++i)
-					bounds.push_back(row.character_bounds[i - row.start]);
-				std::sort(bounds.begin(), bounds.end());
-				for (size_t i = 0; i < bounds.size();) {
-					double x1 = bounds[i].first;
-					double x2 = bounds[i].second;
-					while (++i < bounds.size() && bounds[i].first <= x2 + .01)
-						x2 = std::max(x2, bounds[i].second);
-					draw_selection(x1, x2);
-				}
-			}
-			else draw_selection(row.carets[start - row.start], row.carets[end - row.start]);
+			double x1 = row.carets[start - row.start];
+			double x2 = row.carets[end - row.start];
+			Vector2D selected[4] = {
+				FromDocumentCoords(Vector2D(static_cast<float>(x1), static_cast<float>(row.y))),
+				FromDocumentCoords(Vector2D(static_cast<float>(x2), static_cast<float>(row.y))),
+				FromDocumentCoords(Vector2D(static_cast<float>(x2), static_cast<float>(row.y + row.height))),
+				FromDocumentCoords(Vector2D(static_cast<float>(x1), static_cast<float>(row.y + row.height)))};
+			gl.DrawTriangle(selected[0], selected[1], selected[2]);
+			gl.DrawTriangle(selected[0], selected[2], selected[3]);
 		}
 	}
 	else if (caret_visible) {
