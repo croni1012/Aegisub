@@ -232,11 +232,17 @@ void SubsTextEditCtrl::SetStyles() {
 	UpdateStyle();
 }
 
-void SubsTextEditCtrl::SetTextDirection(bool right_to_left) {
-	SetLayoutDirection(right_to_left ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+void SubsTextEditCtrl::SetTextDirection(bool rtl) {
+	right_to_left = rtl;
+	SetLayoutDirection(rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+	UpdateStyle();
+	Refresh();
+}
+
+void SubsTextEditCtrl::ApplyTextDirection() {
 #ifdef __WXMSW__
 	// wxTextCtrl updates the window direction, but RichEdit keeps its paragraph
-	// direction separately. Clear it explicitly when returning to LTR as well.
+	// direction separately. Syntax styling can overwrite it, so apply this last.
 	long selection_start, selection_end;
 	GetSelection(&selection_start, &selection_end);
 	SetSelection(0, GetLastPosition());
@@ -248,8 +254,6 @@ void SubsTextEditCtrl::SetTextDirection(bool right_to_left) {
 		reinterpret_cast<LPARAM>(&format));
 	SetSelection(selection_start, selection_end);
 #endif
-	UpdateStyle();
-	Refresh();
 }
 
 void SubsTextEditCtrl::UpdateStyle() {
@@ -290,6 +294,7 @@ void SubsTextEditCtrl::UpdateStyle() {
 	SetStyle(insertion_point, insertion_point, normal);
 	SetSelection(selection_start, selection_end);
 	if (selection_start == selection_end) SetInsertionPoint(insertion_point);
+	ApplyTextDirection();
 	styling = false;
 	UpdateCallTip();
 }

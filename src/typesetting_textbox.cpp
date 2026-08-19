@@ -403,12 +403,24 @@ std::vector<LayoutRow> Layout(agi::Context *c, AssDialogue const& prototype,
 
 	std::vector<double> advances(document.text.length());
 	std::vector<double> heights(document.text.length());
-	for (size_t i = 0; i < document.text.length(); ++i) {
-		if (document.text[i] == '\n') continue;
-		auto metric = Measure(c, prototype, StyleAt(document, i), document.text.Mid(i, 1),
-			cache, synthetic_bold_cache);
-		advances[i] = metric.width;
-		heights[i] = metric.height;
+	for (size_t run_start = 0; run_start < document.text.length();) {
+		if (document.text[run_start] == '\n') {
+			++run_start;
+			continue;
+		}
+		auto const& style = StyleAt(document, run_start);
+		size_t run_end = run_start + 1;
+		while (run_end < document.text.length() && document.text[run_end] != '\n' &&
+			StyleAt(document, run_end) == style) ++run_end;
+		double previous_width = 0.0;
+		for (size_t i = run_start; i < run_end; ++i) {
+			auto metric = Measure(c, prototype, style,
+				document.text.Mid(run_start, i - run_start + 1), cache, synthetic_bold_cache);
+			advances[i] = std::max(0.0, metric.width - previous_width);
+			heights[i] = metric.height;
+			previous_width = metric.width;
+		}
+		run_start = run_end;
 	}
 
 	std::vector<LayoutRow> rows;

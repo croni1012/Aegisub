@@ -74,6 +74,7 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	long cursor_pos = -1;
 	wxTipWindow::Ref calltip;
 	bool styling = false;
+	bool right_to_left = false;
 
 	void OnContextMenu(wxContextMenuEvent &);
 	void OnKeyDown(wxKeyEvent &event);
@@ -84,7 +85,8 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	void OnSetDicLanguage(wxCommandEvent &event);
 	void OnSetThesLanguage(wxCommandEvent &event);
 	void SetStyles();
-	void SetTextDirection(bool right_to_left);
+	void SetTextDirection(bool rtl);
+	void ApplyTextDirection();
 	void UpdateStyle();
 	void UpdateCallTip();
 	void CloseCallTip();
