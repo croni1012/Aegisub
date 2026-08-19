@@ -12,6 +12,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <wx/string.h>
@@ -87,6 +88,9 @@ struct LayoutRow {
 	double letter_spacing = 0.0;
 	bool paragraph_last = true;
 	std::vector<double> carets;
+	/// Visual bounds for each logical character. Populated by the interactive
+	/// editor when bidirectional layout makes a selection non-contiguous.
+	std::vector<std::pair<double, double>> character_bounds;
 };
 
 Document FromSelection(agi::Context *c, std::vector<AssDialogue *> const& lines);
