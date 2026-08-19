@@ -250,14 +250,12 @@ void SubsTextEditCtrl::ApplyTextDirection() {
 	format.cbSize = sizeof(format);
 	format.dwMask = PFM_RTLPARA | PFM_ALIGNMENT;
 	format.wEffects = right_to_left ? PFE_RTLPARA : 0;
-	format.wAlignment = right_to_left ? PFA_RIGHT : PFA_LEFT;
+	// SetLayoutDirection mirrors the RichEdit window in RTL mode. PFA_LEFT is
+	// therefore visually right-aligned there, and visually left-aligned in LTR.
+	format.wAlignment = PFA_LEFT;
 	::SendMessageW(reinterpret_cast<HWND>(GetHandle()), EM_SETPARAFORMAT, 0,
 		reinterpret_cast<LPARAM>(&format));
 	SetSelection(selection_start, selection_end);
-#else
-	wxTextAttr paragraph;
-	paragraph.SetAlignment(right_to_left ? wxTEXT_ALIGNMENT_RIGHT : wxTEXT_ALIGNMENT_LEFT);
-	SetStyle(0, GetLastPosition(), paragraph);
 #endif
 }
 
