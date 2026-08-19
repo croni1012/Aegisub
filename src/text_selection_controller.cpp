@@ -1,90 +1,95 @@
 // Copyright (c) 2014, Thomas Goyne <plorkyeran@aegisub.org>
-//
-// Permission to use, copy, modify, and distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
-//
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-//
-// Aegisub Project http://www.aegisub.org/
+// Permission to use, copy, modify, and distribute this software for any purpose
+// with or without fee is hereby granted.
 
 #include "text_selection_controller.h"
 
-#include <wx/stc/stc.h>
+#include <algorithm>
+#include <wx/textctrl.h>
 
-void TextSelectionController::SetControl(wxStyledTextCtrl *ctrl) {
-	this->ctrl = ctrl;
-	if (ctrl)
-		ctrl->Bind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+namespace {
+long Utf8Position(wxTextCtrl const& ctrl, long position) {
+	auto text = ctrl.GetRange(0, std::max(0L, position)).utf8_str();
+	return static_cast<long>(text.length());
+}
+
+long NativePosition(wxTextCtrl const& ctrl, long utf8_position) {
+	long low = 0;
+	long high = ctrl.GetLastPosition();
+	while (low < high) {
+		long middle = low + (high - low) / 2;
+		if (Utf8Position(ctrl, middle) < utf8_position)
+			low = middle + 1;
+		else
+			high = middle;
+	}
+	return low;
+}
+}
+
+void TextSelectionController::SetControl(wxTextCtrl *control) {
+	if (ctrl) {
+		ctrl->Unbind(wxEVT_KEY_UP, &TextSelectionController::UpdateUI, this);
+		ctrl->Unbind(wxEVT_LEFT_UP, &TextSelectionController::UpdateUI, this);
+		ctrl->Unbind(wxEVT_TEXT, &TextSelectionController::UpdateUI, this);
+	}
+	ctrl = control;
+	if (ctrl) {
+		ctrl->Bind(wxEVT_KEY_UP, &TextSelectionController::UpdateUI, this);
+		ctrl->Bind(wxEVT_LEFT_UP, &TextSelectionController::UpdateUI, this);
+		ctrl->Bind(wxEVT_TEXT, &TextSelectionController::UpdateUI, this);
+		wxCommandEvent event;
+		UpdateUI(event);
+	}
 }
 
 TextSelectionController::~TextSelectionController() {
-	if (ctrl) ctrl->Unbind(wxEVT_STC_UPDATEUI, &TextSelectionController::UpdateUI, this);
+	SetControl(nullptr);
 }
 
-#define GET(var, new_value) do { \
-	int tmp = new_value;      \
-	if (tmp != var) {         \
-		var = tmp;            \
-		changed = true;       \
-	}                         \
-} while(false)
-
-#define SET(var, new_value, Setter) do { \
-	if (var != new_value) {              \
-		var = new_value;                 \
-		if (ctrl) ctrl->Setter(var);     \
-	}                                    \
-} while (false)
-
-void TextSelectionController::UpdateUI(wxStyledTextEvent &evt) {
-	if (changing) return;
-
-	bool changed = false;
-	GET(insertion_point, ctrl->GetInsertionPoint());
-	if (evt.GetUpdated() & wxSTC_UPDATE_SELECTION) {
-		GET(selection_start, ctrl->GetSelectionStart());
-		GET(selection_end, ctrl->GetSelectionEnd());
-	}
-	else {
-		GET(selection_start, insertion_point);
-		GET(selection_end, insertion_point);
-	}
-	if (changed) AnnounceSelectionChanged();
+void TextSelectionController::UpdateUI(wxEvent& event) {
+	event.Skip();
+	if (changing || !ctrl) return;
+	long native_start, native_end;
+	ctrl->GetSelection(&native_start, &native_end);
+	long new_insertion = Utf8Position(*ctrl, ctrl->GetInsertionPoint());
+	long new_start = Utf8Position(*ctrl, native_start);
+	long new_end = Utf8Position(*ctrl, native_end);
+	if (new_insertion == insertion_point && new_start == selection_start && new_end == selection_end) return;
+	insertion_point = new_insertion;
+	selection_start = new_start;
+	selection_end = new_end;
+	AnnounceSelectionChanged();
 }
 
-void TextSelectionController::SetInsertionPoint(int position) {
+void TextSelectionController::SetInsertionPoint(long position) {
 	changing = true;
-	SET(insertion_point, position, SetInsertionPoint);
+	insertion_point = position;
+	selection_start = position;
+	selection_end = position;
+	if (ctrl) ctrl->SetInsertionPoint(NativePosition(*ctrl, position));
 	changing = false;
 	AnnounceSelectionChanged();
 }
 
-void TextSelectionController::SetSelection(int start, int end) {
+void TextSelectionController::SetSelection(long start, long end) {
 	changing = true;
-	SET(selection_start, start, SetSelectionStart);
-	SET(selection_end, end, SetSelectionEnd);
+	selection_start = start;
+	selection_end = end;
+	insertion_point = end;
+	if (ctrl) ctrl->SetSelection(NativePosition(*ctrl, start), NativePosition(*ctrl, end));
 	changing = false;
 	AnnounceSelectionChanged();
 }
-
 
 void TextSelectionController::CommitStagedChanges() {
-	if (has_staged_selection) {
-		if (staged_selection_start <= staged_selection_end) {
-			SetSelection(staged_selection_start, staged_selection_end);
-		} else {
-			// commit some crimes to get this to work in all cases
-			SetInsertionPoint(staged_selection_end == 0 ? staged_selection_start : 0);
-			SetSelection(staged_selection_start, staged_selection_start);
-			SetInsertionPoint(staged_selection_end);
-		}
-		has_staged_selection = false;
+	if (!has_staged_selection) return;
+	if (staged_selection_start <= staged_selection_end)
+		SetSelection(staged_selection_start, staged_selection_end);
+	else {
+		SetInsertionPoint(staged_selection_end == 0 ? staged_selection_start : 0);
+		SetSelection(staged_selection_start, staged_selection_start);
+		SetInsertionPoint(staged_selection_end);
 	}
+	has_staged_selection = false;
 }

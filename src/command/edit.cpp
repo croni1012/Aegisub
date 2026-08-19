@@ -1636,6 +1636,31 @@ struct edit_insert_original final : public Command {
 	}
 };
 
+struct edit_rtl_mode final : public Command {
+	CMD_NAME("edit/toggle_rtl_mode")
+	STR_HELP("Toggle between Right-to-Left and Left-to-Right text direction mode for the subtitle grid and editor")
+	CMD_TYPE(COMMAND_VALIDATE | COMMAND_DYNAMIC_NAME)
+
+	wxString StrMenu(const agi::Context *c) const override {
+		bool rtl_mode = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
+		return rtl_mode ? _("Switch to &LTR Mode") : _("Switch to &RTL Mode");
+	}
+
+	wxString StrDisplay(const agi::Context *c) const override {
+		bool rtl_mode = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
+		return rtl_mode ? _("Switch to LTR Mode") : _("Switch to RTL Mode");
+	}
+
+	void operator()(agi::Context *c) override {
+		bool current_mode = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
+		bool new_mode = !current_mode;
+
+		// Update config options only - grid and editor rendering will automatically adjust
+		OPT_SET("Subtitle/Grid/RTL Mode")->SetBool(new_mode);
+		OPT_SET("Subtitle/Edit Box/RTL Mode")->SetBool(new_mode);
+	}
+};
+
 struct edit_line_change_text final : public Command {
 	CMD_NAME("edit/line/change-text")
 	STR_MENU("Change text")
@@ -1775,5 +1800,6 @@ namespace cmd {
 		reg(std::make_unique<edit_clear>());
 		reg(std::make_unique<edit_clear_text>());
 		reg(std::make_unique<edit_comment>());
+		reg(std::make_unique<edit_rtl_mode>());
 	}
 }

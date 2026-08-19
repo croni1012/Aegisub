@@ -45,7 +45,9 @@
         { "command" : "subtitle/find" },
         { "command" : "subtitle/find/next" },
         { "command" : "edit/find_replace" },
-        { "command" : "edit/find_in_folder" }
+        { "command" : "edit/find_in_folder" },
+        {},
+        { "command" : "edit/toggle_rtl_mode" }
     ],
     "main/ai" : [
 		{ "submenu" : "main/ai/proofread", "text" : "AI post-check" },

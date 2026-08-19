@@ -102,6 +102,7 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context)
 	}
 
 	UpdateStyle();
+	SetLayoutDirection(OPT_GET("Subtitle/Grid/RTL Mode")->GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 	OnHighlightVisibleChange(*OPT_GET("Subtitle/Grid/Highlight Subtitles in Frame"));
 
 	connections = agi::signal::make_vector({
@@ -140,6 +141,11 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context)
 
 		OPT_SUB("Subtitle/Grid/Highlight Subtitles in Frame", &BaseGrid::OnHighlightVisibleChange, this),
 		OPT_SUB("Subtitle/Grid/Hide Overrides", [&](agi::OptionValue const&) { Refresh(false); }),
+		OPT_SUB("Subtitle/Grid/RTL Mode", [&](agi::OptionValue const&) {
+			bool new_rtl = OPT_GET("Subtitle/Grid/RTL Mode")->GetBool();
+			SetLayoutDirection(new_rtl ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+			Refresh(false);
+		}),
 	});
 
 	Bind(wxEVT_CONTEXT_MENU, &BaseGrid::OnContextMenu, this);

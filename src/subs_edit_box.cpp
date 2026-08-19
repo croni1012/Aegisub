@@ -73,6 +73,7 @@
 #include <wx/settings.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
+#include <wx/wx.h>
 
 namespace {
 
@@ -317,9 +318,17 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	// Text editor
 	edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), (app_theme::IsDark() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN), c);
 	edit_ctrl->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
+	edit_ctrl->SetInitialSize(FromDIP(wxSize(300,50)));
+	main_sizer->Add(edit_ctrl, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 3));
+	edit_ctrl->Bind(wxEVT_TEXT, &SubsEditBox::OnChange, this);
+	context->textSelectionController->SetControl(edit_ctrl);
+	edit_ctrl->SetFocus();
 
 	secondary_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), (app_theme::IsDark() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN) | wxTE_MULTILINE | wxTE_READONLY);
 	souceline_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), (app_theme::IsDark() ? wxBORDER_SIMPLE : wxBORDER_SUNKEN) | wxTE_MULTILINE | wxTE_READONLY);
+	auto direction = OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+	secondary_editor->SetLayoutDirection(direction);
+	souceline_editor->SetLayoutDirection(direction);
 
 	wxFont font = secondary_editor->GetFont();
 	font.SetPointSize(OPT_GET("Subtitle/Edit Box/Font Size")->GetInt());
@@ -328,7 +337,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 
 	main_sizer->Add(secondary_editor,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 	main_sizer->Add(souceline_editor,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
-	main_sizer->Add(edit_ctrl,1,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 	main_sizer->Hide(secondary_editor);
 	main_sizer->Hide(souceline_editor);
 
@@ -341,9 +349,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	main_sizer->Hide(bottom_sizer);
 
 	SetSizerAndFit(main_sizer);
-
-	edit_ctrl->Bind(wxEVT_STC_MODIFIED, &SubsEditBox::OnChange, this);
-	edit_ctrl->SetModEventMask(wxSTC_MOD_INSERTTEXT | wxSTC_MOD_DELETETEXT | wxSTC_STARTACTION);
 
 	Bind(wxEVT_TEXT, &SubsEditBox::OnLayerEnter, this, layer->GetId());
 	Bind(wxEVT_SPINCTRL, &SubsEditBox::OnLayerEnter, this, layer->GetId());
@@ -363,9 +368,11 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 		context->selectionController->AddSelectionListener(&SubsEditBox::OnSelectedSetChanged, this),
 		context->initialLineState->AddChangeListener(&SubsEditBox::OnLineInitialTextChanged, this),
 	 });
-
-	context->textSelectionController->SetControl(edit_ctrl);
-	edit_ctrl->SetFocus();
+	connections.push_back(OPT_SUB("Subtitle/Edit Box/RTL Mode", [this](agi::OptionValue const& option) {
+		auto direction = option.GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+		secondary_editor->SetLayoutDirection(direction);
+		souceline_editor->SetLayoutDirection(direction);
+	}));
 
 	bool show_original = OPT_GET("Subtitle/Show Original")->GetBool();
 	if (show_original) {
@@ -566,10 +573,8 @@ void SubsEditBox::OnKeyDown(wxKeyEvent &event) {
 	hotkey::check("Subtitle Edit Box", c, event);
 }
 
-void SubsEditBox::OnChange(wxStyledTextEvent &event) {
-	if (line && edit_ctrl->GetTextRaw().data() != line->Text.get()) {
-		if (event.GetModificationType() & wxSTC_STARTACTION)
-			commit_id = -1;
+void SubsEditBox::OnChange([[maybe_unused]] wxCommandEvent& event) {
+	if (line && std::string(edit_ctrl->GetValue().utf8_str()) != line->Text.get()) {
 		CommitText(_("modify text"));
 		UpdateCharacterCount(line->Text);
 	}
@@ -604,8 +609,9 @@ void SubsEditBox::SetSelectedRows(T AssDialogueBase::*field, wxString const& val
 }
 
 void SubsEditBox::CommitText(wxString const& desc) {
-	auto data = edit_ctrl->GetTextRaw();
-	SetSelectedRows(&AssDialogue::Text, boost::flyweight<std::string>(data.data(), data.length()), desc, AssFile::COMMIT_DIAG_TEXT, true);
+	if (edit_ctrl) {
+		SetSelectedRows(&AssDialogue::Text, edit_ctrl->GetValue(), desc, AssFile::COMMIT_DIAG_TEXT, true);
+	}
 }
 
 void SubsEditBox::CommitTimes(TimeField field) {
@@ -704,7 +710,7 @@ void SubsEditBox::SetControlsState(bool state) {
 	Enable(state);
 	if (!state) {
 		wxEventBlocker blocker(this);
-		edit_ctrl->SetTextTo("");
+		if (edit_ctrl) edit_ctrl->SetTextTo("");
 	}
 }
 
@@ -783,7 +789,7 @@ void SubsEditBox::OnCommentChange(wxCommandEvent &evt) {
 
 void SubsEditBox::CallCommand(const char *cmd_name) {
 	cmd::call(cmd_name, c);
-	edit_ctrl->SetFocus();
+	if (edit_ctrl) edit_ctrl->SetFocus();
 }
 
 void SubsEditBox::UpdateCharacterCount(std::string const& text) {

@@ -10,6 +10,7 @@ param (
 $lastSvnRevision = 6962
 $lastSvnHash = '16cd907fe7482cb54a7374cd28b8501f138116be'
 $defineNumberMatch = [regex] '^#define\s+(\w+)\s+(\d+)$'
+$defineResourceBaseVersionMatch = [regex] '^#define\s+RESOURCE_BASE_VERSION\s*\(?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)?\s*$'
 $defineStringMatch = [regex] "^#define\s+(\w+)\s+[`"']?(.+?)[`"']?$"
 $semVerMatch = [regex] '^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-(\w+))?$'
 
@@ -29,7 +30,11 @@ if ([System.IO.Path]::GetFullPath([System.IO.Path]::Combine((pwd).Path, $BuildRo
   }
 $gitVersionHeaderPath = Join-Path $BuildRoot 'git_version.h'
 
-$version = @{}
+$version = @{
+  TAGGED_RELEASE = $false
+  INSTALLER_VERSION = '0.0.0'
+  RESOURCE_BASE_VERSION = @(0, 0, 0)
+}
 if (Test-Path $gitVersionHeaderPath) {
   Get-Content $gitVersionHeaderPath | %{$_.Trim()} | ?{$_} | %{
     switch -regex ($_) {

@@ -42,7 +42,21 @@
     ],
     "main" : "[Dummy, set in platform configs]",
     "main/file" : "[Dummy, set in platform configs]",
-    "main/edit" : "[Dummy, set in platform configs]",
+    "main/edit" : [
+        { "command" : "edit/undo" },
+        { "command" : "edit/redo" },
+        {},
+        { "command" : "edit/line/cut" },
+        { "command" : "edit/line/copy" },
+        { "command" : "edit/line/paste" },
+        { "command" : "edit/line/paste/over" },
+        {},
+        { "command" : "subtitle/find" },
+        { "command" : "subtitle/find/next" },
+        { "command" : "edit/find_replace" },
+        {},
+        { "command" : "edit/toggle_rtl_mode" }
+    ],
     "main/subtitle" : "[Dummy, set in platform configs]",
     "main/subtitle/insert lines" : [
         { "command" : "subtitle/insert/before" },

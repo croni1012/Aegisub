@@ -50,8 +50,6 @@ class wxCheckBox;
 class wxRadioButton;
 class wxSizer;
 class wxSpinCtrl;
-class wxStyledTextCtrl;
-class wxStyledTextEvent;
 class wxTextCtrl;
 struct AssDialogueBase;
 
@@ -138,7 +136,6 @@ class SubsEditBox final : public wxPanel {
 	wxComboBox *MakeComboBox(wxString const& initial_text, int style, void (SubsEditBox::*handler)(wxCommandEvent&), wxString const& tooltip);
 	wxRadioButton *MakeRadio(wxString const& text, bool start, wxString const& tooltip);
 
-	void OnChange(wxStyledTextEvent &event);
 	void OnKeyDown(wxKeyEvent &event);
 
 	void OnActiveLineChanged(AssDialogue *new_line);
@@ -199,7 +196,9 @@ class SubsEditBox final : public wxPanel {
 
 	void SetDurationField();
 
-	SubsTextEditCtrl *edit_ctrl;
+	SubsTextEditCtrl *edit_ctrl = nullptr;
+	void OnChange(wxCommandEvent& event);
+
 	wxTextCtrl *secondary_editor;
 	wxTextCtrl *souceline_editor;
 

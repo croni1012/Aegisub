@@ -29,8 +29,10 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
-#include <wx/stc/stc.h>
+#include <wx/textctrl.h>
+#include <wx/tipwin.h>
 
 class Thesaurus;
 namespace agi {
@@ -40,8 +42,8 @@ namespace agi {
 }
 
 /// @class SubsTextEditCtrl
-/// @brief A Scintilla control with spell checking and syntax highlighting
-class SubsTextEditCtrl final : public wxStyledTextCtrl {
+/// @brief Native subtitle editor with bidi text, spell checking and syntax highlighting
+class SubsTextEditCtrl final : public wxTextCtrl {
 	/// Backend spellchecker to use
 	std::unique_ptr<agi::SpellChecker> spellchecker;
 
@@ -55,7 +57,7 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	std::string currentWord;
 
 	/// The beginning of the word right-clicked on, for spellchecker replacing
-	std::pair<int, int> currentWordPos;
+	std::pair<long, long> currentWordPos;
 
 	/// Spellchecker suggestions for the last right-clicked word
 	std::vector<std::string> sugs;
@@ -63,51 +65,33 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Thesaurus suggestions for the last right-clicked word
 	std::vector<std::string> thesSugs;
 
-	/// Text of the currently shown calltip, to avoid flickering from
-	/// pointlessly reshowing the current tip
-	std::string calltip_text;
-
-	/// Position of the currently show calltip
-	size_t calltip_position = 0;
-
-	/// Cursor position which the current calltip is for
-	int cursor_pos;
-
-	/// The last seen line text, used to avoid reparsing the line for syntax
-	/// highlighting when possible
+	/// UTF-8 text and tokens used by syntax highlighting, spell checking and calltips
 	std::string line_text;
-
-	/// Tokenized version of line_text
 	std::vector<agi::ass::DialogueToken> tokenized_line;
 
-	/// Caret, anchor, and hit position captured before the native right-click handler can
-	/// move them. Opening the context menu must never alter the text selection.
-	bool right_click_pending = false;
-	int right_click_anchor = 0;
-	int right_click_caret = 0;
-	int right_click_position = -1;
-
-	/// Put the anchor and the caret back exactly where they were, including when the anchor
-	/// is the later of the two. wxStyledTextCtrl::SetSelection cannot express that.
-	void RestoreSelection(int anchor, int caret);
+	std::string calltip_text;
+	size_t calltip_position = 0;
+	long cursor_pos = -1;
+	wxTipWindow::Ref calltip;
+	bool styling = false;
+	bool right_to_left = false;
 
 	void OnContextMenu(wxContextMenuEvent &);
-	void OnRightDown(wxMouseEvent &);
-	void OnDoubleClick(wxStyledTextEvent&);
+	void OnKeyDown(wxKeyEvent &event);
+	void OnText(wxCommandEvent &event);
+	void OnLoseFocus(wxFocusEvent &event);
+	void OnToggleRTL(wxCommandEvent &event);
 	void OnUseSuggestion(wxCommandEvent &event);
 	void OnSetDicLanguage(wxCommandEvent &event);
 	void OnSetThesLanguage(wxCommandEvent &event);
-	void OnLoseFocus(wxFocusEvent &event);
-	void OnKeyDown(wxKeyEvent &event);
-
-	void SetSyntaxStyle(int id, wxFont &font, std::string const& name, wxColor const& default_background);
-	void Subscribe(std::string const& name);
-
-	void StyleSpellCheck();
-	void UpdateCallTip();
 	void SetStyles();
-
+	void SetTextDirection(bool rtl);
+	void ApplyTextDirection();
 	void UpdateStyle();
+	void UpdateCallTip();
+	void CloseCallTip();
+	void Subscribe(std::string const& name);
+	wxTextAttr SyntaxStyle(int id, wxFont const& font, wxColour const& default_background) const;
 
 	/// Add the thesaurus suggestions to a menu
 	void AddThesaurusEntries(wxMenu &menu);
@@ -128,7 +112,5 @@ public:
 	void SetTextTo(std::string const& text);
 	void Paste() override;
 
-	std::pair<int, int> GetBoundsOfWordAtPosition(int pos);
-
-	DECLARE_EVENT_TABLE()
+	std::pair<long, long> GetBoundsOfWordAtPosition(long pos);
 };
