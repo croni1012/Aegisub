@@ -84,6 +84,7 @@ class SubsTextEditCtrl final : public wxTextCtrl {
 	void OnSetDicLanguage(wxCommandEvent &event);
 	void OnSetThesLanguage(wxCommandEvent &event);
 	void SetStyles();
+	void SetTextDirection(bool right_to_left);
 	void UpdateStyle();
 	void UpdateCallTip();
 	void CloseCallTip();

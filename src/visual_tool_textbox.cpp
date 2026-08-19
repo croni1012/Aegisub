@@ -18,6 +18,7 @@
 #include "include/aegisub/context.h"
 #include "line_change_flags.h"
 #include "libresrc/libresrc.h"
+#include "options.h"
 #include "project.h"
 #include "selection_controller.h"
 #include "typesetting_transform.h"
@@ -117,6 +118,12 @@ VisualToolTextBox::VisualToolTextBox(VideoDisplay *parent, agi::Context *context
 , gl_text(std::make_unique<OpenGLText>())
 , return_tool(std::move(return_tool)) {
 	if (this->return_tool == "video/tool/textbox") this->return_tool = "video/tool/cross";
+	right_to_left = OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool();
+	connections.push_back(OPT_SUB("Subtitle/Edit Box/RTL Mode", [this](agi::OptionValue const& value) {
+		right_to_left = value.GetBool();
+		if (active && !waiting_for_box) UpdatePreview();
+		else this->parent->Render();
+	}));
 	primary_icon = GETBUNDLE(button_color_one, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
 	outline_icon = GETBUNDLE(button_color_three, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
 	shadow_icon = GETBUNDLE(button_color_four, 20).GetBitmap(wxSize(20, 20)).ConvertToImage();
@@ -245,6 +252,14 @@ void VisualToolTextBox::UpdatePreview() {
 	layout.clear();
 	if (!waiting_for_box) {
 		auto generated = typesetting::textbox::Generate(c, *prototype, document, &layout);
+		if (right_to_left) {
+			for (auto& row : layout) {
+				if (row.carets.empty()) continue;
+				double left = row.carets.front();
+				double right = row.carets.back();
+				for (double& x : row.carets) x = left + right - x;
+			}
+		}
 		Vector2D corners[4];
 		typesetting::textbox::Corners(document, corners);
 		AssDialogue background(*prototype);
@@ -416,6 +431,7 @@ void VisualToolTextBox::ResetCaretBlink() {
 }
 
 void VisualToolTextBox::MoveCaret(long amount, bool selecting) {
+	if (right_to_left) amount = -amount;
 	long next = std::clamp<long>(static_cast<long>(caret) + amount, 0,
 		static_cast<long>(document.text.length()));
 	caret = static_cast<size_t>(next);
@@ -448,7 +464,7 @@ void VisualToolTextBox::MoveCaretVertical(int direction, bool selecting) {
 void VisualToolTextBox::MoveCaretToRowEdge(bool end, bool selecting) {
 	for (auto const& row : layout) {
 		if (caret < row.start || caret > row.end) continue;
-		caret = end ? row.end : row.start;
+		caret = end != right_to_left ? row.end : row.start;
 		if (!selecting) anchor = caret;
 		parent->Render();
 		return;

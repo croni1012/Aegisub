@@ -59,6 +59,11 @@
 #include <wx/settings.h>
 #include <wx/tipwin.h>
 
+#ifdef __WXMSW__
+#include <windows.h>
+#include <richedit.h>
+#endif
+
 #define LANGS_MAX 1000
 
 enum {
@@ -112,7 +117,7 @@ char const *StyleName(int id) {
 		case COMMENT: return "Comment";
 		case DRAWING_CMD: return "Drawing Command";
 		case OVERRIDE: return "Brackets";
-		case PUNCTUATION: return "Slashes";
+		case agi::ass::SyntaxStyle::PUNCTUATION: return "Slashes";
 		case TAG: return "Tags";
 		case ERROR: return "Error";
 		case PARAMETER: return "Parameters";
@@ -173,8 +178,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow *parent, wxSize size, long style, ag
 	OPT_SUB("Subtitle/Highlight/Syntax", &SubsTextEditCtrl::UpdateStyle, this);
 	OPT_SUB("App/Call Tips", &SubsTextEditCtrl::UpdateCallTip, this);
 	OPT_SUB("Subtitle/Edit Box/RTL Mode", [this](agi::OptionValue const& value) {
-		SetLayoutDirection(value.GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight);
-		Refresh();
+		SetTextDirection(value.GetBool());
 	});
 
 	Bind(wxEVT_MENU, [this](wxCommandEvent&) {
@@ -188,8 +192,8 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow *parent, wxSize size, long style, ag
 		SetFocus();
 	}, EDIT_MENU_REMOVE_FROM_DICT);
 
-	SetLayoutDirection(OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 	SetStyles();
+	SetTextDirection(OPT_GET("Subtitle/Edit Box/RTL Mode")->GetBool());
 }
 
 SubsTextEditCtrl::~SubsTextEditCtrl() {
@@ -228,9 +232,32 @@ void SubsTextEditCtrl::SetStyles() {
 	UpdateStyle();
 }
 
+void SubsTextEditCtrl::SetTextDirection(bool right_to_left) {
+	SetLayoutDirection(right_to_left ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+#ifdef __WXMSW__
+	// wxTextCtrl updates the window direction, but RichEdit keeps its paragraph
+	// direction separately. Clear it explicitly when returning to LTR as well.
+	long selection_start, selection_end;
+	GetSelection(&selection_start, &selection_end);
+	SetSelection(0, GetLastPosition());
+	PARAFORMAT2 format{};
+	format.cbSize = sizeof(format);
+	format.dwMask = PFM_RTLPARA;
+	format.wEffects = right_to_left ? PFE_RTLPARA : 0;
+	::SendMessageW(reinterpret_cast<HWND>(GetHandle()), EM_SETPARAFORMAT, 0,
+		reinterpret_cast<LPARAM>(&format));
+	SetSelection(selection_start, selection_end);
+#endif
+	UpdateStyle();
+	Refresh();
+}
+
 void SubsTextEditCtrl::UpdateStyle() {
 	if (styling) return;
 	styling = true;
+	long selection_start, selection_end;
+	GetSelection(&selection_start, &selection_end);
+	long insertion_point = GetInsertionPoint();
 	line_text = ToUtf8(GetValue());
 	AssDialogue *line = context ? context->selectionController->GetActiveLine() : nullptr;
 	bool template_line = line && line->Comment &&
@@ -257,6 +284,12 @@ void SubsTextEditCtrl::UpdateStyle() {
 			SetStyle(start, TextPosition(line_text, byte_position), attr);
 		}
 	}
+	// RichEdit otherwise inherits the last highlighted span's character format
+	// for newly inserted text (most visibly after deleting the whole line).
+	SetDefaultStyle(normal);
+	SetStyle(insertion_point, insertion_point, normal);
+	SetSelection(selection_start, selection_end);
+	if (selection_start == selection_end) SetInsertionPoint(insertion_point);
 	styling = false;
 	UpdateCallTip();
 }
