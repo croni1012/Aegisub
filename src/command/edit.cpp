@@ -54,6 +54,7 @@
 #include "../text_selection_controller.h"
 #include "../typesetting_gradient.h"
 #include "../typesetting_glitch.h"
+#include "../typesetting_animated_text.h"
 #include "../typesetting_textbox.h"
 #include "../utils.h"
 #include "../video_controller.h"
@@ -199,7 +200,9 @@ void paste_lines(agi::Context *c, bool paste_over, Paster&& paste_line) {
 	std::vector<std::pair<AssDialogue*, AssDialogue*>> foldsToAdd;
 	bool restored_gradient_metadata = false;
 	bool restored_glitch_metadata = false;
+	bool restored_animated_text_metadata = false;
 	bool restored_textbox_metadata = false;
+	typesetting::animated_text::ClipboardPasteState animated_text_paste_state;
 
 	boost::char_separator<char> sep("\r\n");
 	for (auto curdata : boost::tokenizer<boost::char_separator<char>>(data, sep)) {
@@ -230,6 +233,9 @@ void paste_lines(agi::Context *c, bool paste_over, Paster&& paste_line) {
 			typesetting::gradient::RestoreClipboardMetadata(*c->ass, *inserted);
 		restored_glitch_metadata |=
 			typesetting::glitch::RestoreClipboardMetadata(*c->ass, *inserted);
+		restored_animated_text_metadata |=
+			typesetting::animated_text::RestoreClipboardMetadata(*c->ass, *inserted,
+				&animated_text_paste_state);
 		restored_textbox_metadata |=
 			typesetting::textbox::RestoreClipboardMetadata(*c->ass, *inserted);
 
@@ -240,7 +246,8 @@ void paste_lines(agi::Context *c, bool paste_over, Paster&& paste_line) {
 
 	if (first) {
 		int commit_type = paste_over ? AssFile::COMMIT_DIAG_FULL : AssFile::COMMIT_DIAG_ADDREM;
-		if (restored_gradient_metadata || restored_glitch_metadata || restored_textbox_metadata)
+		if (restored_gradient_metadata || restored_glitch_metadata ||
+			restored_animated_text_metadata || restored_textbox_metadata)
 			commit_type |= AssFile::COMMIT_EXTRADATA;
 		int commitId = c->ass->Commit(_("paste"), commit_type);
 
@@ -784,6 +791,7 @@ struct edit_find_in_folder final : public Command {
 
 static void copy_lines(agi::Context *c) {
 	auto selection = c->selectionController->GetSelectedSet();
+	typesetting::animated_text::ExpandSelection(*c->ass, selection);
 	if (c->imageMask) c->imageMask->ExpandTypesettingSelection(selection);
 	std::vector<AssDialogue *> sorted(selection.begin(), selection.end());
 	std::sort(sorted.begin(), sorted.end(), [](AssDialogue *a, AssDialogue *b) {
@@ -802,6 +810,7 @@ static void copy_lines(agi::Context *c) {
 
 		str += typesetting::gradient::ClipboardMetadata(*c->ass, *d);
 		str += typesetting::glitch::ClipboardMetadata(*c->ass, *d);
+		str += typesetting::animated_text::ClipboardMetadata(*c->ass, *d);
 		str += typesetting::textbox::ClipboardMetadata(*c->ass, *d);
 
 		std::string source_line(agi::Trim(d->SourceLineText.get()));

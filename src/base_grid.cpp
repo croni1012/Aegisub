@@ -48,6 +48,7 @@
 #include "selection_controller.h"
 #include "subs_controller.h"
 #include "typesetting_gradient.h"
+#include "typesetting_animated_text.h"
 #include "theme.h"
 #include "video_controller.h"
 
@@ -952,14 +953,21 @@ void BaseGrid::OnContextMenu(wxContextMenuEvent &evt) {
 		context->selectionController->GetActiveLine() : GetVisDialogue(row);
 
 	if (d && (context->imageMask->IsGroupStart(d) ||
-		context->imageMask->IsGradientGroup(d) || context->imageMask->IsGlitchGroup(d)) &&
+		context->imageMask->IsGradientGroup(d) || context->imageMask->IsGlitchGroup(d) ||
+		typesetting::animated_text::IsEffect(*context->ass, d)) &&
 		!context->selectionController->GetSelectedSet().count(d)) {
 		SelectRow(row, false);
 		context->selectionController->SetActiveLine(d);
 	}
 
 	if (pos == wxDefaultPosition || pos.y > lineHeight) {
-		if (d && context->imageMask->IsGlitchGroup(d)) {
+		if (d && typesetting::animated_text::IsEffect(*context->ass, d)) {
+			if (!animated_text_context_menu)
+				animated_text_context_menu = menu::GetMenu("grid_context_animated_text",
+					(wxID_HIGHEST + 1) + 8875, context);
+			menu::OpenPopupMenu(animated_text_context_menu.get(), this);
+		}
+		else if (d && context->imageMask->IsGlitchGroup(d)) {
 			if (!glitch_context_menu)
 				glitch_context_menu = menu::GetMenu("grid_context_glitch",
 					(wxID_HIGHEST + 1) + 8750, context);

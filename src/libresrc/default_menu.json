@@ -48,6 +48,13 @@
         {},
         { "include" : "grid_context" }
     ],
+	"grid_context_animated_text" : [
+		{ "command" : "typesetting/animated_text/edit" },
+		{ "command" : "typesetting/animated_text/copy" },
+		{ "command" : "typesetting/animated_text/delete" },
+		{},
+		{ "include" : "grid_context" }
+	],
     "main" : "[Dummy, set in platform configs]",
     "main/file" : "[Dummy, set in platform configs]",
     "main/edit" : "[Dummy, set in platform configs]",

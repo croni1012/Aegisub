@@ -100,6 +100,7 @@ class BaseGrid final : public wxWindow {
 	std::unique_ptr<wxMenu> context_menu;
 	std::unique_ptr<wxMenu> gradient_context_menu;
 	std::unique_ptr<wxMenu> glitch_context_menu;
+	std::unique_ptr<wxMenu> animated_text_context_menu;
 
 	void OnDPIChanged(wxDPIChangedEvent &e);
 	void OnContextMenu(wxContextMenuEvent &evt);

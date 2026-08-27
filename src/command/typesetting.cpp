@@ -27,6 +27,7 @@
 #include "../compat.h"
 #include "../dialog_gradient.h"
 #include "../dialog_glitch.h"
+#include "../dialog_animated_text.h"
 #include "../dialog_motion.h"
 #include "../subtitle_line_combiner.h"
 #include "../include/aegisub/context.h"
@@ -34,6 +35,7 @@
 #include "../project.h"
 #include "../typesetting_gradient.h"
 #include "../typesetting_glitch.h"
+#include "../typesetting_animated_text.h"
 #include "../typesetting_transform.h"
 #include "../typesetting_image_insert.h"
 #include "../typesetting_motion.h"
@@ -369,6 +371,57 @@ struct typesetting_glitch_delete final : public Command {
 	void operator()(agi::Context *c) override { typesetting::glitch::Revert(c); }
 };
 
+struct typesetting_animated_text final : public Command {
+	CMD_NAME("typesetting/animated_text")
+	CMD_TYPE(COMMAND_VALIDATE)
+	STR_MENU("Animated Text")
+	STR_DISP("Animated Text")
+	STR_HELP("Animate words, syllables or characters with frame-based ASS transforms")
+	bool Validate(const agi::Context *c) override {
+		return !c->selectionController->GetSelectedSet().empty();
+	}
+	void operator()(agi::Context *c) override { ShowAnimatedTextDialog(c); }
+};
+
+struct typesetting_animated_text_edit final : public Command {
+	CMD_NAME("typesetting/animated_text/edit")
+	CMD_TYPE(COMMAND_VALIDATE)
+	STR_MENU("Edit Animated Text")
+	STR_DISP("Edit Animated Text")
+	STR_HELP("Edit the selected Animated Text settings")
+	bool Validate(const agi::Context *c) override {
+		return typesetting::animated_text::IsEffect(*c->ass,
+			c->selectionController->GetActiveLine());
+	}
+	void operator()(agi::Context *c) override { ShowAnimatedTextDialog(c); }
+};
+
+struct typesetting_animated_text_copy final : public Command {
+	CMD_NAME("typesetting/animated_text/copy")
+	CMD_TYPE(COMMAND_VALIDATE)
+	STR_MENU("Copy Animated Text")
+	STR_DISP("Copy Animated Text")
+	STR_HELP("Copy the selected lines with their editable Animated Text settings")
+	bool Validate(const agi::Context *c) override {
+		return typesetting::animated_text::IsEffect(*c->ass,
+			c->selectionController->GetActiveLine());
+	}
+	void operator()(agi::Context *c) override { cmd::call("edit/line/copy", c); }
+};
+
+struct typesetting_animated_text_delete final : public Command {
+	CMD_NAME("typesetting/animated_text/delete")
+	CMD_TYPE(COMMAND_VALIDATE)
+	STR_MENU("Remove Animated Text")
+	STR_DISP("Remove Animated Text")
+	STR_HELP("Restore the selected lines to their text before animation")
+	bool Validate(const agi::Context *c) override {
+		return typesetting::animated_text::IsEffect(*c->ass,
+			c->selectionController->GetActiveLine());
+	}
+	void operator()(agi::Context *c) override { typesetting::animated_text::Revert(c); }
+};
+
 struct typesetting_textbox final : public Command {
 	CMD_NAME("typesetting/textbox")
 	CMD_TYPE(COMMAND_VALIDATE)
@@ -522,6 +575,10 @@ namespace cmd {
 		reg(std::make_unique<typesetting_glitch_edit>());
 		reg(std::make_unique<typesetting_glitch_copy>());
 		reg(std::make_unique<typesetting_glitch_delete>());
+		reg(std::make_unique<typesetting_animated_text>());
+		reg(std::make_unique<typesetting_animated_text_edit>());
+		reg(std::make_unique<typesetting_animated_text_copy>());
+		reg(std::make_unique<typesetting_animated_text_delete>());
 		reg(std::make_unique<typesetting_textbox>());
 		reg(std::make_unique<typesetting_image_insert_quick>());
 		reg(std::make_unique<typesetting_image_insert_insert>());

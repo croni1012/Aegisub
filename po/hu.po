@@ -11252,6 +11252,162 @@ msgstr ""
 "vállalnak a program működéséért.%n%nTovábbi információkért látogasson el az "
 "Aegisub weboldalára, ahol többek között beszerezheti a program forráskódját."
 
+#: ../src/dialog_animated_text.cpp
+#: ../src/command/typesetting.cpp
+msgid "Animated Text"
+msgstr "Animált Szöveg"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "No split"
+msgstr "Nincs bontás"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Words"
+msgstr "Szavak"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Syllables"
+msgstr "Szótagok"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Characters"
+msgstr "Betűk"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Set to fixed value"
+msgstr "Beállítás fix értékre"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Set to random range"
+msgstr "Beállítás véletlen tartományból"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Add/subtract fixed value"
+msgstr "Fix érték hozzáadása/kivonása"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Add/subtract random value"
+msgstr "Véletlen érték hozzáadása/kivonása"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Add/subtract fixed percent"
+msgstr "Fix százalék hozzáadása/kivonása"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "Add/subtract random percent"
+msgstr "Véletlen százalék hozzáadása/kivonása"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Text segmentation"
+msgstr "Szöveg felbontása"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Split into:"
+msgstr "Felbontás:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Delay per element (frames):"
+msgstr "Elemek közti késleltetés (képkocka):"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Repeat count:"
+msgstr "Ismétlések száma:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Repeat until line end"
+msgstr "Ismétlés a sor végéig"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Tag changes"
+msgstr "Tagváltoztatások"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Add tag"
+msgstr "Tag hozzáadása"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Remove tag"
+msgstr "Tag eltávolítása"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Tag:"
+msgstr "Tag:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Change:"
+msgstr "Változtatás:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Maximum:"
+msgstr "Maximum:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Minimum:"
+msgstr "Minimum:"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Loop line"
+msgstr "Sor ismétlése"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Apply"
+msgstr "Alkalmaz"
+
+#: ../src/dialog_animated_text.cpp
+#, c-format
+msgid "Animation %zu - %d frames"
+msgstr "%zu. animáció - %d képkocka"
+
+#: ../src/dialog_animated_text.cpp
+#, c-format
+msgid "Animation %zu - %d frames (off)"
+msgstr "%zu. animáció - %d képkocka (kikapcsolva)"
+
+#: ../src/dialog_animated_text.cpp
+#, c-format
+msgid "%zu. %s - %s"
+msgstr "%zu. %s - %s"
+
+#: ../src/dialog_animated_text.cpp
+msgid "Animated Text works only on text lines; drawing lines were skipped."
+msgstr "Az Animált Szöveg funkció csak szöveges sorokon működik; az alakzatsorokat kihagyta."
+
+#: ../src/command/typesetting.cpp
+msgid "Edit Animated Text"
+msgstr "Animált Szöveg szerkesztése"
+
+#: ../src/command/typesetting.cpp
+msgid "Copy Animated Text"
+msgstr "Animált Szöveg másolása"
+
+#: ../src/command/typesetting.cpp
+msgid "Remove Animated Text"
+msgstr "Animált Szöveg visszavonása"
+
+#: ../src/command/typesetting.cpp
+msgid "Animate words, syllables or characters with frame-based ASS transforms"
+msgstr "Szavak, szótagok vagy betűk animálása képkocka-alapú ASS transzformációkkal"
+
+#: ../src/command/typesetting.cpp
+msgid "Edit the selected Animated Text settings"
+msgstr "A kijelölt Animált Szöveg beállításainak szerkesztése"
+
+#: ../src/command/typesetting.cpp
+msgid "Copy the selected lines with their editable Animated Text settings"
+msgstr "A kijelölt sorok másolása a szerkeszthető Animált Szöveg beállításaikkal"
+
+#: ../src/command/typesetting.cpp
+msgid "Restore the selected lines to their text before animation"
+msgstr "A kijelölt sorok animáció előtti szövegének visszaállítása"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "apply animated text"
+msgstr "animált szöveg alkalmazása"
+
+#: ../src/typesetting_animated_text.cpp
+msgid "remove animated text"
+msgstr "animált szöveg visszavonása"
+
 #~ msgid "Effect type:"
 #~ msgstr "Effekttípus:"
 
