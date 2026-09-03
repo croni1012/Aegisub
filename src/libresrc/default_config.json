@@ -105,6 +105,7 @@
 			"Cloud Name" : ""
 		},
 		"OpenAI" : {
+			"Base URL" : "https://api.openai.com/v1",
 			"Image Model" : "gpt-image-2",
 			"Model" : "gpt-5.6-terra"
 		}

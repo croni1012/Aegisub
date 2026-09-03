@@ -11908,3 +11908,11 @@ msgstr "Buscar actualizacións:"
 #, c-format
 msgid "This will install Aegisub {#BUILD_GIT_VERSION_STRING} on your computer.%n%nAegisub is covered by the GNU General Public License version 2. This means you may use the application for any purpose without charge, but that no warranties of any kind are given either.%n%nSee the Aegisub website for information on obtaining the source code.\\r"
 msgstr "O instalador instalará agora no seu ordenador a versión {#BUILD_GIT_VERSION_STRING} de Aegisub.%n%nA aplicación Aegisub está protexida pola licenza GNU General Public License version 2. Isto significa que pode usar a aplicación de balde, pero os desenvolvedores non ofrecen ningunha garantía sobre o seu funcionamento.%n%nPara obter máis información, visite o sitio web de Aegisub, onde tamén poderá obter o código fonte da aplicación."
+
+#: src/dialog_ai_connection.cpp
+msgid "API base URL:"
+msgstr "URL base da API:"
+
+#: src/dialog_ai_connection.cpp
+msgid "Changing this could cause issues."
+msgstr "Cambiar isto pode causar problemas."

@@ -15,6 +15,7 @@
 #include <wx/base64.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
@@ -37,7 +38,41 @@
 namespace ai {
 namespace {
 
-constexpr char api_base[] = "https://api.openai.com/v1";
+constexpr char default_api_base[] = "https://api.openai.com/v1";
+
+bool has_scheme(std::string const& url, char const *scheme) {
+	auto const length = std::strlen(scheme);
+	return url.size() >= length &&
+		std::equal(scheme, scheme + length, url.begin(), [](char a, char b) {
+			return a == std::tolower(static_cast<unsigned char>(b));
+		});
+}
+
+std::string normalize_api_base(std::string base) {
+	auto const first = base.find_first_not_of(" \t\r\n");
+	if (first == std::string::npos)
+		base.clear();
+	else
+		base = base.substr(first, base.find_last_not_of(" \t\r\n") - first + 1);
+
+	if (base.empty()) base = default_api_base;
+
+	// The API key travels to this address in an Authorization header, so assume
+	// TLS when the user leaves the scheme out and refuse anything but HTTP(S).
+	if (base.find("://") == std::string::npos)
+		base.insert(0, "https://");
+	else if (!has_scheme(base, "http://") && !has_scheme(base, "https://"))
+		throw Error("Az API alapcímének http:// vagy https:// protokollt kell használnia.");
+
+	while (base.size() > 1 && base.back() == '/')
+		base.pop_back();
+	return base;
+}
+
+std::string api_base() {
+	return normalize_api_base(OPT_GET("AI/OpenAI/Base URL")->GetString());
+}
+
 constexpr size_t proofread_max_input_chars = 900000;
 constexpr size_t proofread_max_lines_per_request = 300;
 #ifdef _WIN32
@@ -118,6 +153,15 @@ public:
 void configure_common(CURL *curl, std::string const& api_key,
 	std::string *response, std::atomic_bool *cancelled) {
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	// The API base URL is user-configurable, so keep transfers on HTTP(S)
+	// instead of letting curl pick a protocol out of the configured address.
+#if LIBCURL_VERSION_NUM >= 0x075500
+	curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+	curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+	curl_easy_setopt(curl, CURLOPT_PROTOCOLS, static_cast<long>(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+	curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, static_cast<long>(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, "Aegisub-Muteki/AI");
 	// Long transcription and review requests have no client-side time limit.
 	// They remain cancellable through the transfer callback below.
@@ -759,7 +803,7 @@ ReviewResult structured_request(std::string const& key,
 	request["store"] = false;
 	request["max_output_tokens"] = include_line_reviews ? 12000 : 4000;
 
-	auto response_text = post_json(key, std::string(api_base) + "/responses",
+	auto response_text = post_json(key, api_base() + "/responses",
 		write_json(request), cancelled);
 	auto response_root_value = parse_json(response_text);
 	auto& response_root = static_cast<json::Object&>(response_root_value);
@@ -798,7 +842,7 @@ ProofreadResult proofread_request(std::string const& key,
 	request["store"] = false;
 	request["max_output_tokens"] = 16000;
 
-	auto response_text = post_json(key, std::string(api_base) + "/responses",
+	auto response_text = post_json(key, api_base() + "/responses",
 		write_json(request), cancelled);
 	auto response_root_value = parse_json(response_text);
 	auto const& response_root = static_cast<json::Object const&>(response_root_value);
@@ -948,6 +992,10 @@ bool delete_secret_service_secret(char const *account, std::string *message) {
 
 } // namespace
 
+std::string DefaultApiBase() {
+	return default_api_base;
+}
+
 OpenAIClient::OpenAIClient(std::string api_key, std::string model,
 	std::string transcription_model, std::string custom_instructions,
 	std::atomic_bool *cancelled)
@@ -961,13 +1009,14 @@ OpenAIClient::OpenAIClient(std::string api_key, std::string model,
 	if (this->transcription_model.empty()) throw Error("Nincs beállítva beszédfelismerési modell.");
 }
 
-void OpenAIClient::TestConnection() const {
+void OpenAIClient::TestConnection(std::string const& base_url) const {
+	auto const base = normalize_api_base(base_url);
 	CurlHandle curl;
 	std::string response;
 	configure_common(curl, api_key, &response, cancelled);
 	char *escaped = curl_easy_escape(curl, model.c_str(), static_cast<int>(model.size()));
 	if (!escaped) throw Error("A modellnév kódolása sikertelen.");
-	std::string url = std::string(api_base) + "/models/" + escaped;
+	std::string url = base + "/models/" + escaped;
 	curl_free(escaped);
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	auto headers = authenticated_headers(api_key, false);
@@ -978,7 +1027,7 @@ std::string OpenAIClient::Transcribe(agi::fs::path const& audio_file) const {
 	CurlHandle curl;
 	std::string response;
 	configure_common(curl, api_key, &response, cancelled);
-	curl_easy_setopt(curl, CURLOPT_URL, (std::string(api_base) + "/audio/transcriptions").c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, (api_base() + "/audio/transcriptions").c_str());
 
 	curl_mime *mime = curl_mime_init(curl);
 	if (!mime) throw Error("A hangfeltöltés előkészítése sikertelen.");
@@ -1033,7 +1082,7 @@ std::string EditImage(std::string const& api_key, std::string const& image_model
 	std::string response;
 	std::function<bool()> cancel_check = is_cancelled;
 	configure_common(curl, api_key, &response, nullptr);
-	curl_easy_setopt(curl, CURLOPT_URL, (std::string(api_base) + "/images/edits").c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, (api_base() + "/images/edits").c_str());
 
 	curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, function_progress_callback);
 	curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &cancel_check);
@@ -1098,7 +1147,7 @@ TimedTranscript OpenAIClient::TranscribeTimed(agi::fs::path const& audio_file) c
 	CurlHandle curl;
 	std::string response;
 	configure_common(curl, api_key, &response, cancelled);
-	curl_easy_setopt(curl, CURLOPT_URL, (std::string(api_base) + "/audio/transcriptions").c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, (api_base() + "/audio/transcriptions").c_str());
 
 	curl_mime *mime = curl_mime_init(curl);
 	if (!mime) throw Error("A hangfeltöltés előkészítése sikertelen.");
@@ -1239,7 +1288,7 @@ KaraokeResult OpenAIClient::CreateKaraoke(KaraokeMode mode,
 	request["reasoning"] = std::move(reasoning);
 	request["store"] = false;
 	request["max_output_tokens"] = 16000;
-	auto response_text = post_json(api_key, std::string(api_base) + "/responses",
+	auto response_text = post_json(api_key, api_base() + "/responses",
 		write_json(request), cancelled);
 	auto response_root_value = parse_json(response_text);
 	auto const& response_root = static_cast<json::Object const&>(response_root_value);
@@ -1288,7 +1337,7 @@ KaraokeResult OpenAIClient::CreateKanji(std::vector<KaraokeInputLine> const& lin
 	request["reasoning"] = std::move(reasoning);
 	request["store"] = false;
 	request["max_output_tokens"] = 8000;
-	auto response_text = post_json(api_key, std::string(api_base) + "/responses",
+	auto response_text = post_json(api_key, api_base() + "/responses",
 		write_json(request), cancelled);
 	auto response_root_value = parse_json(response_text);
 	auto const& response_root = static_cast<json::Object const&>(response_root_value);

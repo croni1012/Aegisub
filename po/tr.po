@@ -12206,3 +12206,11 @@ msgstr "Güncellemeleri denetle:"
 #, c-format
 msgid "This will install Aegisub {#BUILD_GIT_VERSION_STRING} on your computer.%n%nAegisub is covered by the GNU General Public License version 2. This means you may use the application for any purpose without charge, but that no warranties of any kind are given either.%n%nSee the Aegisub website for information on obtaining the source code.\\r"
 msgstr "Yükleyici şimdi Aegisub {#BUILD_GIT_VERSION_STRING} sürümünü bilgisayarınıza yükleyecek.%n%nAegisub programı GNU Genel Kamu Lisansı sürüm 2 lisans sözleşmesiyle korunmaktadır. Bu, programı ücretsiz olarak kullanabileceğiniz, ancak geliştiricilerin programın çalışmasıyla ilgili hiçbir garanti vermediği anlamına gelir.%n%nDaha fazla bilgi için Aegisub web sitesini ziyaret edin; burada programın kaynak kodunu da edinebilirsiniz."
+
+#: src/dialog_ai_connection.cpp
+msgid "API base URL:"
+msgstr "API temel URL'si:"
+
+#: src/dialog_ai_connection.cpp
+msgid "Changing this could cause issues."
+msgstr "Bunu değiştirmek sorunlara neden olabilir."
