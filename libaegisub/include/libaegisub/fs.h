@@ -21,9 +21,12 @@
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
+#include <iomanip>
 #include <iterator>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
 
 #undef CreateDirectory
 
@@ -59,8 +62,10 @@ public:
 		return std::string(reinterpret_cast<const char *>(result.c_str()), result.size());
 	}
 
-	// We do not override wstring() here: While the conversion method for this is technically unspecified here,
-	// it seems to always return UTF-16 in practice. If this ever changes, wstring() can be overwritten or deleted here.
+	// Native UTF-16 on Windows, UTF-8 decoded to wchar_t on other platforms.
+	// std::filesystem's locale-dependent conversion can reject Unicode paths
+	// on Linux, even when the application has selected a UTF-8 locale.
+	std::wstring wstring() const;
 
 	inline friend path operator/(path const& lhs, path const& rhs) {
 		const std::filesystem::path &lhs_ = lhs;

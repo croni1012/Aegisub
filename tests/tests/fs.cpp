@@ -22,6 +22,14 @@
 
 using namespace agi::fs;
 
+TEST(lagi_fs, unicode_path_display) {
+	EXPECT_EQ(L"", path().wstring());
+	EXPECT_EQ(L"automation/include/script.lua", path("automation/include/script.lua").wstring());
+	EXPECT_EQ(L"/home/árvíztűrő 日本語 😀/.aegisub/automation/autoload/őű.lua",
+		path("/home/árvíztűrő 日本語 😀/.aegisub/automation/autoload/őű.lua").wstring());
+	EXPECT_EQ(L"őű😀.lua", path("/home/árvíztűrő/őű😀.lua").filename().wstring());
+}
+
 TEST(lagi_fs, exists) {
 	EXPECT_TRUE(Exists("data/file"));
 	EXPECT_TRUE(Exists("data/dir"));

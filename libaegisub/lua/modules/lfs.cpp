@@ -100,8 +100,11 @@ DirectoryIterator *dir_new(const char *path, char **err) {
 
 const char *get_mode(const char *path, char **err) {
 	return wrap(err, [=]() -> const char * {
+		// Lua filenames are UTF-8; a raw char* would use the Windows ANSI code page.
+		const agi::fs::path filename(path);
+		const auto mode = sfs::status(filename).type();
 		using enum sfs::file_type;
-		switch (sfs::status(path).type()) {
+		switch (mode) {
 			case not_found: return nullptr;
 			case regular:   return "file";
 			case directory: return "directory";

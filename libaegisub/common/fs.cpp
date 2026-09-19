@@ -20,11 +20,22 @@
 #include "libaegisub/log.h"
 
 #include <boost/algorithm/string/predicate.hpp>
+#ifndef _WIN32
+#include <boost/locale/encoding_utf.hpp>
+#endif
 #include <system_error>
 
 namespace sfs = std::filesystem;
 
 namespace agi::fs {
+std::wstring path::wstring() const {
+#ifdef _WIN32
+	return native();
+#else
+	return boost::locale::conv::utf_to_utf<wchar_t>(native(), boost::locale::conv::stop);
+#endif
+}
+
 namespace {
 void check_error(std::error_code ec, const char *exp, path const& src_path, path const& dst_path) {
 	if (ec == std::error_code{}) return;
