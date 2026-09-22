@@ -11879,3 +11879,11 @@ msgstr "Провера ажурирања:"
 #, c-format
 msgid "This will install Aegisub {#BUILD_GIT_VERSION_STRING} on your computer.%n%nAegisub is covered by the GNU General Public License version 2. This means you may use the application for any purpose without charge, but that no warranties of any kind are given either.%n%nSee the Aegisub website for information on obtaining the source code.\\r"
 msgstr "Инсталациони програм ће сада инсталирати верзију Aegisub {#BUILD_GIT_VERSION_STRING} на Ваш рачунар.%n%nПрограм Aegisub је заштићен лиценцним уговором GNU General Public License version 2. То значи да програм можете бесплатно користити, али програмери не пружају никакве гаранције за његов рад.%n%nЗа више информација посетите веб-сајт програма Aegisub, где, између осталог, можете преузети изворни код програма."
+
+#: src/dialog_ai_connection.cpp
+msgid "API base URL:"
+msgstr "Основни URL API-ја:"
+
+#: src/dialog_ai_connection.cpp
+msgid "Changing this could cause issues."
+msgstr "Промена овога може изазвати проблеме."

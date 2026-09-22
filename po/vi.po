@@ -11981,3 +11981,11 @@ msgstr "Kiểm tra cập nhật:"
 #, c-format
 msgid "This will install Aegisub {#BUILD_GIT_VERSION_STRING} on your computer.%n%nAegisub is covered by the GNU General Public License version 2. This means you may use the application for any purpose without charge, but that no warranties of any kind are given either.%n%nSee the Aegisub website for information on obtaining the source code.\\r"
 msgstr "Trình cài đặt sẽ cài đặt phiên bản Aegisub {#BUILD_GIT_VERSION_STRING} vào máy tính của bạn ngay bây giờ.%n%nAegisub được bảo vệ bởi giấy phép GNU General Public License version 2. Điều này có nghĩa là bạn có thể sử dụng chương trình miễn phí, nhưng các nhà phát triển không cung cấp bất kỳ bảo đảm nào về hoạt động của chương trình.%n%nĐể biết thêm thông tin, hãy truy cập trang web Aegisub, nơi bạn cũng có thể tải mã nguồn của chương trình."
+
+#: src/dialog_ai_connection.cpp
+msgid "API base URL:"
+msgstr "URL cơ sở của API:"
+
+#: src/dialog_ai_connection.cpp
+msgid "Changing this could cause issues."
+msgstr "Thay đổi mục này có thể gây ra sự cố."

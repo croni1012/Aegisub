@@ -106,6 +106,9 @@ struct ReviewResult {
 	std::string conversation_json = "[]";
 };
 
+/// The API base URL used when nothing is configured.
+std::string DefaultApiBase();
+
 class OpenAIClient final {
 	std::string api_key;
 	std::string model;
@@ -118,7 +121,9 @@ public:
 		std::string transcription_model, std::string custom_instructions = {},
 		std::atomic_bool *cancelled = nullptr);
 
-	void TestConnection() const;
+	/// Test the connection against the given base URL. An empty value means
+	/// DefaultApiBase().
+	void TestConnection(std::string const& base_url) const;
 	std::string Transcribe(agi::fs::path const& audio_file) const;
 	TimedTranscript TranscribeTimed(agi::fs::path const& audio_file) const;
 	KaraokeResult CreateKaraoke(KaraokeMode mode,

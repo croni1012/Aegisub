@@ -24,6 +24,7 @@ namespace {
 
 class AIConnectionDialog final : public wxDialog {
 	wxTextCtrl *openai_key;
+	wxTextCtrl *api_base_url;
 	wxTextCtrl *model;
 	wxTextCtrl *image_model;
 	wxCheckBox *remember_openai;
@@ -86,7 +87,7 @@ class AIConnectionDialog final : public wxDialog {
 		try {
 			ai::OpenAIClient client(key, from_wx(model->GetValue()),
 				"gpt-transcribe");
-			client.TestConnection();
+			client.TestConnection(from_wx(api_base_url->GetValue()));
 			wxMessageBox(_("The OpenAI connection is working."), _("AI connection"),
 				wxOK | wxICON_INFORMATION, this);
 		}
@@ -172,6 +173,7 @@ class AIConnectionDialog final : public wxDialog {
 			return;
 		}
 
+		OPT_SET("AI/OpenAI/Base URL")->SetString(from_wx(api_base_url->GetValue()));
 		OPT_SET("AI/OpenAI/Model")->SetString(from_wx(model->GetValue()));
 		OPT_SET("AI/OpenAI/Image Model")->SetString(from_wx(image_model->GetValue()));
 		OPT_SET("AI/Cloudinary/Cloud Name")->SetString(from_wx(cloud_name->GetValue()));
@@ -204,6 +206,15 @@ public:
 		openai_key = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 		openai_key->SetHint(_("Leave empty to keep using the current key"));
 		openai_form->Add(openai_key, wxSizerFlags(1).Expand());
+		openai_form->Add(new wxStaticText(this, wxID_ANY, _("API base URL:")), 0, wxALIGN_CENTER_VERTICAL);
+		api_base_url = new wxTextCtrl(this, wxID_ANY,
+			to_wx(OPT_GET("AI/OpenAI/Base URL")->GetString()));
+		api_base_url->SetHint(to_wx(ai::DefaultApiBase()));
+		openai_form->Add(api_base_url, wxSizerFlags(1).Expand());
+		openai_form->AddSpacer(0);
+		auto api_base_warning = new wxStaticText(this, wxID_ANY, _("Changing this could cause issues."));
+		api_base_warning->Wrap(360);
+		openai_form->Add(api_base_warning, wxSizerFlags(1).Expand());
 		openai_form->Add(new wxStaticText(this, wxID_ANY, _("AI model:")), 0, wxALIGN_CENTER_VERTICAL);
 		model = new wxTextCtrl(this, wxID_ANY, to_wx(OPT_GET("AI/OpenAI/Model")->GetString()));
 		openai_form->Add(model, wxSizerFlags(1).Expand());
