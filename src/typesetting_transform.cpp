@@ -374,13 +374,15 @@ std::string PaintDecorationShape(std::string text, std::string const& paint,
 /// and a straight edge has to be cut up before it can follow a curve, since mapping its two
 /// ends would only move the ends.
 std::string MapClipBody(std::string const& body, PointMap const& map,
-                        OrientedBox const& box, double span);
+                        OrientedBox const& box, double span, bool projective);
 /// Close every contour, then cut every straight run and every curve into pieces short enough
 /// to follow one.
 std::vector<Segment> Subdivide(std::vector<Segment> const& given, double span);
+std::vector<Segment> SubdivideProjectiveCurves(std::vector<Segment> const& segments,
+                                              PointMap const& map);
 
 std::string MapClips(std::string const& text, PointMap const& map, OrientedBox const& box,
-                     double span) {
+                     double span, bool projective = false) {
 	std::string out;
 	std::regex pattern(R"(\\(i?clip)\(([^)]*)\))");
 	auto begin = std::sregex_iterator(text.begin(), text.end(), pattern);
@@ -388,7 +390,7 @@ std::string MapClips(std::string const& text, PointMap const& map, OrientedBox c
 	size_t last = 0;
 	for (auto at = begin; at != end; ++at) {
 		auto const& found = *at;
-		std::string mapped = MapClipBody(found[2].str(), map, box, span);
+		std::string mapped = MapClipBody(found[2].str(), map, box, span, projective);
 		if (mapped.empty()) continue;
 		out += text.substr(last, found.position(0) - last);
 		out += "\\" + found[1].str() + "(" + mapped + ")";
@@ -439,7 +441,7 @@ std::vector<Vector2D> CutToBox(std::vector<Vector2D> shape, OrientedBox const& b
 }
 
 std::string MapClipBody(std::string const& body, PointMap const& map,
-                        OrientedBox const& box, double span) {
+                        OrientedBox const& box, double span, bool projective) {
 	std::vector<std::string> parts;
 	size_t at = 0;
 	while (true) {
@@ -470,20 +472,24 @@ std::string MapClipBody(std::string const& body, PointMap const& map,
 		number(parts[2], corner[2]) && number(parts[3], corner[3])) {
 		Vector2D low((float)std::min(corner[0], corner[2]), (float)std::min(corner[1], corner[3]));
 		Vector2D high((float)std::max(corner[0], corner[2]), (float)std::max(corner[1], corner[3]));
+		if (!std::isfinite(low.X()) || !std::isfinite(low.Y()) ||
+			!std::isfinite(high.X()) || !std::isfinite(high.Y())) return {};
 
-		// A rectangular clip snaps to whole pixels; a drawing one has soft edges. Two bands of
-		// a gradient that shared an edge would each cover it half way and leave a seam down the
-		// middle, so the band is grown by half a unit on screen - which here means half a unit
-		// divided by however much the mapping magnifies this part of the picture, and never
-		// more than half the band itself, or one band would swallow the next.
-		Vector2D here = map(low);
-		float grow_x = (map(low + Vector2D(1.f, 0.f)) - here).Len();
-		float grow_y = (map(low + Vector2D(0.f, 1.f)) - here).Len();
-		Vector2D pad(
-			std::min((high.X() - low.X()) * .5f, .5f / std::max(grow_x, 1e-6f)),
-			std::min((high.Y() - low.Y()) * .5f, .5f / std::max(grow_y, 1e-6f)));
-		low = low - pad;
-		high = high + pad;
+		if (!projective) {
+			// A rectangular clip snaps to whole pixels; a drawing one has soft edges. Two bands of
+			// a gradient that shared an edge would each cover it half way and leave a seam down the
+			// middle, so the band is grown by half a unit on screen - which here means half a unit
+			// divided by however much the mapping magnifies this part of the picture, and never
+			// more than half the band itself, or one band would swallow the next.
+			Vector2D here = map(low);
+			float grow_x = (map(low + Vector2D(1.f, 0.f)) - here).Len();
+			float grow_y = (map(low + Vector2D(0.f, 1.f)) - here).Len();
+			Vector2D pad(
+				std::min((high.X() - low.X()) * .5f, .5f / std::max(grow_x, 1e-6f)),
+				std::min((high.Y() - low.Y()) * .5f, .5f / std::max(grow_y, 1e-6f)));
+			low = low - pad;
+			high = high + pad;
+		}
 
 		// The part of the band that is nowhere near the shapes cuts nothing, and a bend is only
 		// a bend inside the box it was worked out on - a few hundred units out, which is where
@@ -492,14 +498,15 @@ std::string MapClipBody(std::string const& body, PointMap const& map,
 		// margin leaves room for what spreads beyond the shape itself - a border, a glow.
 		std::vector<Vector2D> shape = {low, Vector2D(high.X(), low.Y()), high,
 		                               Vector2D(low.X(), high.Y())};
-		shape = CutToBox(std::move(shape), box, box.half * .5f + Vector2D(48.f, 48.f));
+		if (!projective)
+			shape = CutToBox(std::move(shape), box, box.half * .5f + Vector2D(48.f, 48.f));
 		if (shape.size() < 3) return {};
 
 		for (size_t i = 0; i < shape.size(); ++i)
 			segments.push_back({i == 0 ? 'm' : 'l', {shape[i]}});
 		// And back to where it started, so that the closing edge is cut into pieces along with
 		// the rest of them rather than left as one straight line across the bend.
-		segments.push_back({'l', {shape[0]}});
+		if (!projective) segments.push_back({'l', {shape[0]}});
 	}
 	else if (parts.size() == 1) {
 		if (!ParseDrawing(parts[0], 1, Vector2D(0.f, 0.f), segments)) return {};
@@ -512,7 +519,7 @@ std::string MapClipBody(std::string const& body, PointMap const& map,
 	}
 	else return {};
 
-	segments = Subdivide(segments, span);
+	segments = projective ? SubdivideProjectiveCurves(segments, map) : Subdivide(segments, span);
 	for (auto& segment : segments)
 		for (auto& point : segment.points) {
 			point = map(point);
@@ -520,6 +527,17 @@ std::string MapClipBody(std::string const& body, PointMap const& map,
 				std::abs(point.X()) > 1e5f || std::abs(point.Y()) > 1e5f) return {};
 		}
 
+	// Keep axis-aligned rectangles rectangular, including at the reference frame.
+	if (projective && parts.size() == 4 && segments.size() == 4) {
+		auto a = segments[0].points[0], b = segments[1].points[0];
+		auto c = segments[2].points[0], d = segments[3].points[0];
+		if ((a.Y() == b.Y() && b.X() == c.X() && c.Y() == d.Y() && d.X() == a.X()) ||
+			(a.X() == b.X() && b.Y() == c.Y() && c.X() == d.X() && d.Y() == a.Y()))
+			return FormatNumber(std::min(a.X(), c.X())) + "," +
+				FormatNumber(std::min(a.Y(), c.Y())) + "," +
+				FormatNumber(std::max(a.X(), c.X())) + "," +
+				FormatNumber(std::max(a.Y(), c.Y()));
+	}
 	std::string drawing = EmitDrawing(segments, scale, Vector2D(0.f, 0.f));
 	if (drawing.empty()) return {};
 	return scale == 1 ? drawing : agi::format("%d,%s", scale, drawing);
@@ -539,6 +557,41 @@ void SplitCubic(Vector2D p0, Vector2D& p1, Vector2D& p2, Vector2D& p3, double t,
 	q1 = a; q2 = d; q3 = f;
 	p1 = e; p2 = c;
 	// p3 stays where it was; the tail runs from f.
+}
+
+std::vector<Segment> SubdivideProjectiveCurves(std::vector<Segment> const& segments,
+                                              PointMap const& map) {
+	std::vector<Segment> out;
+	auto cubic = [](Vector2D a, Vector2D b, Vector2D c, Vector2D d, float t) {
+		float s = 1 - t;
+		return a * (s*s*s) + b * (3*s*s*t) + c * (3*s*t*t) + d * (t*t*t);
+	};
+	auto append = [&](auto&& self, Vector2D a, Vector2D b, Vector2D c, Vector2D d, int depth) -> void {
+		// Affine maps preserve a cubic exactly. Perspective produces a rational cubic;
+		// subdivide only where moving its controls exceeds 0.1 script pixels of error.
+		bool split = false;
+		for (float t : {.25f, .5f, .75f}) {
+			Vector2D error = map(cubic(a, b, c, d, t)) - cubic(map(a), map(b), map(c), map(d), t);
+			if (error.SquareLen() > .01f) split = true;
+		}
+		if (!split || depth == 8) {
+			out.push_back({'b', {b, c, d}});
+			return;
+		}
+		Vector2D q1, q2, q3;
+		SplitCubic(a, b, c, d, .5, q1, q2, q3);
+		self(self, a, q1, q2, q3, depth + 1);
+		self(self, q3, b, c, d, depth + 1);
+	};
+	Vector2D pen;
+	for (auto const& segment : segments) {
+		if (segment.command == 'b' && segment.points.size() == 3)
+			append(append, pen, segment.points[0], segment.points[1], segment.points[2], 0);
+		else
+			out.push_back(segment);
+		if (!segment.points.empty()) pen = segment.points.back();
+	}
+	return out;
 }
 
 /// Cut every curve into short enough pieces that mapping its control points is a
@@ -1364,6 +1417,10 @@ std::vector<Segment> SegmentsOf(std::vector<std::vector<Vector2D>> const& rings)
 std::string TransformClips(std::string const& text, PointMap const& map,
 	OrientedBox const& bounds, double subdivision_span) {
 	return MapClips(text, map, bounds, subdivision_span);
+}
+
+std::string TransformProjectiveClips(std::string const& text, PointMap const& map) {
+	return MapClips(text, map, {}, 0, true);
 }
 
 Vector2D OrientedBox::ToScript(Vector2D local) const {

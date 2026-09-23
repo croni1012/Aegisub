@@ -184,9 +184,13 @@ PointMap QuadMap(OrientedBox const& box, Vector2D const corners[4]);
 PointMap QuadInverseMap(OrientedBox const& box, Vector2D const corners[4]);
 
 /// Carry every rectangular or vector clip in a line through the same screen map.
-/// This is shared by interactive transforms and frame-by-frame motion.
+/// Nonlinear warps subdivide edges and restrict rectangles to the working bounds.
 std::string TransformClips(std::string const& text, PointMap const& map,
 	OrientedBox const& bounds, double subdivision_span = 8.0);
+
+/// Motion preserves straight edges, contour closure and affine Bezier control points.
+/// Only curves distorted by perspective may need additional control points.
+std::string TransformProjectiveClips(std::string const& text, PointMap const& map);
 
 /// How far a point is from where that same map sends the plane to infinity.
 ///

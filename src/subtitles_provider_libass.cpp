@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <boost/gil.hpp>
 #include <memory>
 #include <mutex>
@@ -169,7 +170,9 @@ void LibassSubtitlesProvider::DrawSubtitles(VideoFrame &frame, double time, int 
 	// Note: this relies on Aegisub always rendering at video storage res
 	ass_set_storage_size(renderer(), frame.width, frame.height);
 
-	ASS_Image* img = ass_render_frame(renderer(), ass_track, int(time * 1000), nullptr);
+	// Match upstream: an integer millisecond can round just below itself after
+	// conversion to seconds and back, selecting the preceding animation instant.
+	ASS_Image* img = ass_render_frame(renderer(), ass_track, std::floor(time * 1000 + 1e-6), nullptr);
 
 	// libass actually returns several alpha-masked monochrome images.
 	// Here, we loop through their linked list, get the colour of the current, and blend into the frame.

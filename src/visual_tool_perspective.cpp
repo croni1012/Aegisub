@@ -38,6 +38,7 @@
 #include <libaegisub/log.h>
 
 #include <array>
+#include <algorithm>
 #include <cmath>
 
 #include <wx/colour.h>
@@ -58,14 +59,22 @@ enum VisualToolPerspectiveFeatureType {
 	FEATURE_ORG = 3,
 };
 
-bool Solve2x2(float a11, float a12, float a21, float a22, float b1, float b2, float &x1, float &x2) {
-	float determinant = a11 * a22 - a12 * a21;
-	float scale = std::max({abs(a11), abs(a12), abs(a21), abs(a22), 1.f});
-	if (!isfinite(determinant) || abs(determinant) <= 1e-6f * scale * scale)
+bool Solve2x2(double a11, double a12, double a21, double a22, double b1, double b2, double &x1, double &x2) {
+	double determinant = a11 * a22 - a12 * a21;
+	double scale = std::max({std::abs(a11), std::abs(a12), std::abs(a21), std::abs(a22)});
+	if (!std::isfinite(determinant) || std::abs(determinant) <= 1e-12 * scale * scale)
 		return false;
 	x1 = (b1 * a22 - a12 * b2) / determinant;
 	x2 = (a11 * b2 - b1 * a21) / determinant;
-	return isfinite(x1) && isfinite(x2);
+	return std::isfinite(x1) && std::isfinite(x2);
+}
+
+bool Solve2x2(float a11, float a12, float a21, float a22, float b1, float b2, float &x1, float &x2) {
+	double u, v;
+	if (!Solve2x2(a11, a12, a21, a22, b1, b2, u, v)) return false;
+	x1 = u;
+	x2 = v;
+	return std::isfinite(x1) && std::isfinite(x2);
 }
 
 Vector2D QuadMidpoint(std::vector<Vector2D> quad) {
@@ -78,41 +87,53 @@ Vector2D QuadMidpoint(std::vector<Vector2D> quad) {
 	return quad[0] + center_la1 * diag1;
 }
 
-void UnwrapQuadRel(std::vector<Vector2D> quad, float &x1, float &x2, float &x3, float &x4, float &y1, float &y2, float &y3, float &y4) {
-	x1 = quad[0].X();
-	x2 = quad[1].X() - x1;
-	x3 = quad[2].X() - x1;
-	x4 = quad[3].X() - x1;
-	y1 = quad[0].Y();
-	y2 = quad[1].Y() - y1;
-	y3 = quad[2].Y() - y1;
-	y4 = quad[3].Y() - y1;
+namespace {
+// Homography from the unit square to a quad, relative to its first corner.
+// Expanded float polynomials lose enough precision on thin rotated quads to
+// make a smoothly dragged point jump. Keep intermediate calculations in double.
+struct QuadTransform {
+	double x, y, ax, ay, bx, by, g = 0, h = 0;
+	bool valid;
+
+	explicit QuadTransform(std::vector<Vector2D> const& quad)
+	: x(quad[0].X()), y(quad[0].Y())
+	, ax(quad[1].X() - x), ay(quad[1].Y() - y)
+	, bx(quad[3].X() - x), by(quad[3].Y() - y)
+	{
+		double cx = quad[2].X() - x, cy = quad[2].Y() - y;
+		double z1, z3;
+		valid = Solve2x2(ax - cx, bx - cx, ay - cy, by - cy, -cx, -cy, z1, z3);
+		if (!valid) return;
+		ax *= z1;
+		ay *= z1;
+		bx *= z3;
+		by *= z3;
+		g = z1 - 1;
+		h = z3 - 1;
+	}
+};
 }
 
-Vector2D XYToUV(std::vector<Vector2D> quad, Vector2D xy) {
-	float x1, x2, x3, x4, y1, y2, y3, y4;
-	UnwrapQuadRel(quad, x1, x2, x3, x4, y1, y2, y3, y4);
-	float x = xy.X() - x1;
-	float y = xy.Y() - y1;
-	// Dumped from Mathematica
-	float u = -(((x3*y2 - x2*y3)*(x4*y - x*y4)*(x4*(-y2 + y3) + x3*(y2 - y4) + x2*(-y3 + y4)))/(x3*x3*(x4*y2*y2*(-y + y4) + y4*(x*y2*(y2 - y4) + x2*(y - y2)*y4)) + x3*(x4*x4*y2*y2*(y - y3) + 2*x4*(x2*y*y3*(y2 - y4) + x*y2*(-y2 + y3)*y4) + x2*y4*(x2*(-y + y3)*y4 + 2*x*y2*(-y3 + y4))) + y3*(x*x4*x4*y2*(y2 - y3) + x2*x4*x4*(y2*y3 + y*(-2*y2 + y3)) - x2*x2*(x4*y*(y3 - 2*y4) + x4*y3*y4 + x*y4*(-y3 + y4)))));
-	float v = ((x2*y - x*y2)*(x4*y3 - x3*y4)*(x4*(y2 - y3) + x2*(y3 - y4) + x3*(-y2 + y4)))/(x3*(x4*x4*y2*y2*(-y + y3) + x2*y4*(2*x*y2*(y3 - y4) + x2*(y - y3)*y4) - 2*x4*(x2*y*y3*(y2 - y4) + x*y2*(-y2 + y3)*y4)) + x3*x3*(x4*y2*y2*(y - y4) + y4*(x2*(-y + y2)*y4 + x*y2*(-y2 + y4))) + y3*(x*x4*x4*y2*(-y2 + y3) + x2*x4*x4*(2*y*y2 - y*y3 - y2*y3) + x2*x2*(x4*y*(y3 - 2*y4) + x4*y3*y4 + x*y4*(-y3 + y4))));
-	return isfinite(u) && isfinite(v) ? Vector2D(u, v) : Vector2D(.5f, .5f);
+Vector2D XYToUV(std::vector<Vector2D> const& quad, Vector2D xy) {
+	QuadTransform t(quad);
+	double x = xy.X() - t.x, y = xy.Y() - t.y;
+	double u, v;
+	if (!t.valid || !Solve2x2(t.ax - x * t.g, t.bx - x * t.h,
+		t.ay - y * t.g, t.by - y * t.h, x, y, u, v))
+		return Vector2D(.5f, .5f);
+	return Vector2D(u, v);
 }
 
-Vector2D UVToXY(std::vector<Vector2D> quad, Vector2D uv) {
-	float x1, x2, x3, x4, y1, y2, y3, y4;
-	UnwrapQuadRel(quad, x1, x2, x3, x4, y1, y2, y3, y4);
-	float u = uv.X();
-	float v = uv.Y();
-	// Also dumped from Mathematica
-	float d = (x4*((-1 + u + v)*y2 + y3 - v*y3) + x3*(y2 - u*y2 + (-1 + v)*y4) + x2*((-1 + u)*y3 - (-1 + u + v)*y4));
-	if (!isfinite(d) || abs(d) <= 1e-6f)
-		return (quad[0] + quad[1] + quad[2] + quad[3]) / 4.f;
-	float x = (v*x4*(x3*y2 - x2*y3) + u*x2*(x4*y3 - x3*y4)) / d;
-	float y = (v*y4*(x3*y2 - x2*y3) + u*y2*(x4*y3 - x3*y4)) / d;
-	return isfinite(x) && isfinite(y) ? Vector2D(x + x1, y + y1) :
-		(quad[0] + quad[1] + quad[2] + quad[3]) / 4.f;
+Vector2D UVToXY(std::vector<Vector2D> const& quad, Vector2D uv) {
+	QuadTransform t(quad);
+	double u = uv.X(), v = uv.Y();
+	double d = 1 + t.g * u + t.h * v;
+	if (t.valid && std::isfinite(d) && std::abs(d) > 1e-12) {
+		Vector2D result(t.x + (t.ax * u + t.bx * v) / d,
+			t.y + (t.ay * u + t.by * v) / d);
+		if (std::isfinite(result.X()) && std::isfinite(result.Y())) return result;
+	}
+	return (quad[0] + quad[1] + quad[2] + quad[3]) / 4.f;
 }
 
 std::vector<Vector2D> MakeRect(Vector2D a, Vector2D b) {
@@ -856,6 +877,9 @@ void VisualToolPerspective::TextToPersp() {
 	}
 	for (int i = 0; i < 4; ++i) inner_corners[i]->pos = projected[i];
 
+	// A line without a saved plane must not inherit another line's UV bounds.
+	c1 = Vector2D(.25f, .25f);
+	c2 = Vector2D(.75f, .75f);
 	for (auto const& extra : c->ass->GetExtradata(active_line->ExtradataIds)) {
 		if (extra.key == ambient_plane_key) {
 			std::vector<std::string> fields;
@@ -873,6 +897,7 @@ void VisualToolPerspective::TextToPersp() {
 				double x, y;
 				if (!agi::util::try_parse(ordinates[0], &x)) break;
 				if (!agi::util::try_parse(ordinates[1], &y)) break;
+				if (!std::isfinite(x) || !std::isfinite(y)) break;
 
 				saved_outer.emplace_back(x, y);
 			}
@@ -880,7 +905,18 @@ void VisualToolPerspective::TextToPersp() {
 
 			Vector2D d1 = XYToUV(saved_outer, ToScriptCoords(inner_corners[0]->pos));
 			Vector2D d2 = XYToUV(saved_outer, ToScriptCoords(inner_corners[2]->pos));
-			if (isfinite(d1.X()) && isfinite(d1.Y()) && isfinite(d2.X()) && isfinite(d2.Y())) {
+			bool valid = QuadTransform(saved_outer).valid &&
+				std::isfinite(d1.X()) && std::isfinite(d1.Y()) &&
+				std::isfinite(d2.X()) && std::isfinite(d2.Y()) &&
+				std::abs(d2.X() - d1.X()) > 1e-6f && std::abs(d2.Y() - d1.Y()) > 1e-6f;
+			// Manual tag edits can leave a saved plane in a different perspective.
+			// Two matching opposite corners are insufficient: all four must agree.
+			auto uv = MakeRect(d1, d2);
+			for (int i = 0; valid && i < 4; ++i) {
+				Vector2D delta = UVToXY(saved_outer, uv[i]) - ToScriptCoords(inner_corners[i]->pos);
+				valid = std::isfinite(delta.SquareLen()) && delta.SquareLen() <= 1.f;
+			}
+			if (valid) {
 				c1 = d1;
 				c2 = d2;
 			}

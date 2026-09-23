@@ -143,6 +143,32 @@ foreach ($runtimeMoDir in $runtimeMoDirs) {
     Copy-Item -LiteralPath $freshMo -Destination (Join-Path $runtimeMoDir 'aegisub.mo') -Force
 }
 
+# Match the portable/installer layout when a local VSFilter dependency is available.
+# CSRI searches beside the executable, so copying only aegisub.exe silently changes
+# a user's selected VSFilter renderer to libass. Reuse an already deployed DLL too.
+$csriSource = @(
+    (Join-Path $buildDir 'installer-deps\VSFilter\x64\VSFilter.dll'),
+    (Join-Path $targetExeDir 'installer-deps\VSFilter\x64\VSFilter.dll'),
+    (Join-Path $targetExeDir 'csri\VSFilter.dll'),
+    (Join-Path $buildDir 'csri\VSFilter.dll')
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($csriSource) {
+    $csriHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $csriSource).Hash
+    foreach ($exeDir in @($buildDir, $targetExeDir)) {
+        $csriDir = Join-Path $exeDir 'csri'
+        [System.IO.Directory]::CreateDirectory($csriDir) | Out-Null
+        $csriTarget = Join-Path $csriDir 'VSFilter.dll'
+        if (-not (Test-Path -LiteralPath $csriTarget) -or
+            (Get-FileHash -Algorithm SHA256 -LiteralPath $csriTarget).Hash -ne $csriHash) {
+            Copy-Item -LiteralPath $csriSource -Destination $csriTarget -Force
+        }
+        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $csriTarget).Hash -ne $csriHash) {
+            throw "The deployed CSRI renderer failed SHA-256 verification: $csriTarget"
+        }
+    }
+    Write-Output 'CSRI/VSFilter renderer deployed beside both executables.'
+}
+
 $freshHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $freshExe).Hash
 $targetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $targetExe).Hash
 if ($freshHash -ne $targetHash) { throw 'The copied Aegisub executable failed SHA-256 verification.' }

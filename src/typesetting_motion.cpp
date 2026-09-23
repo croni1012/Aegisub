@@ -797,11 +797,8 @@ std::string MapLine(agi::Context *context, AssDialogue& line, Homography const& 
 		SetFirstTagUnlessDefault(text, "\\blur", blur * growth, 0);
 	}
 	if (map_clips) {
-		typesetting::OrientedBox bounds;
-		bounds.centre = Vector2D(script_width / 2.f, script_height / 2.f);
-		bounds.half = Vector2D(script_width / 2.f, script_height / 2.f);
-		text = typesetting::TransformClips(text,
-			[&matrix](Vector2D point) { return matrix.Map(point); }, bounds);
+		text = typesetting::TransformProjectiveClips(text,
+			[&matrix](Vector2D point) { return matrix.Map(point); });
 	}
 	return text;
 }
@@ -1243,9 +1240,6 @@ bool Apply(agi::Context *context, Track const& main_track,
 			}
 			else {
 				int sample_time = (start + end) / 2;
-				typesetting::OrientedBox bounds;
-				bounds.centre = Vector2D(script_width / 2.f, script_height / 2.f);
-				bounds.half = Vector2D(script_width / 2.f, script_height / 2.f);
 
 				// Worked out once for the frame rather than once per row of the object.
 				std::optional<Homography> clip_map;
@@ -1285,14 +1279,14 @@ bool Apply(agi::Context *context, Track const& main_track,
 						generated_line.Text = MapLine(context, generated_line, main_map, options,
 							options.map_clips && !clip_track, sample_time);
 					else if (options.map_clips && !clip_track)
-						generated_line.Text = typesetting::TransformClips(generated_line.Text.get(),
-							[&main_map](Vector2D point) { return main_map.Map(point); }, bounds);
+						generated_line.Text = typesetting::TransformProjectiveClips(generated_line.Text.get(),
+							[&main_map](Vector2D point) { return main_map.Map(point); });
 					generated_line.Start = start;
 					generated_line.End = end;
 					if (clip_map) {
 						Homography const& map = *clip_map;
-						generated_line.Text = typesetting::TransformClips(generated_line.Text.get(),
-							[&map](Vector2D point) { return map.Map(point); }, bounds);
+						generated_line.Text = typesetting::TransformProjectiveClips(generated_line.Text.get(),
+							[&map](Vector2D point) { return map.Map(point); });
 					}
 					generated.push_back(std::move(generated_line));
 				}
