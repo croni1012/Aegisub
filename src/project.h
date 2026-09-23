@@ -88,7 +88,7 @@ public:
 	bool CanCloseTimecodes() const { return !timecodes_file.empty(); }
 	agi::vfr::Framerate const& Timecodes() const { return timecodes; }
 
-	void LoadKeyframes(agi::fs::path path);
+	bool LoadKeyframes(agi::fs::path path);
 	void CloseKeyframes();
 	bool CanCloseKeyframes() const { return !keyframes_file.empty(); }
 	std::vector<int> const& Keyframes() const { return keyframes; }

@@ -7,7 +7,7 @@ on:
   push:
     tags: [ 'v*' ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, migration03 ]
   workflow_dispatch:
 
 jobs:
@@ -103,6 +103,11 @@ jobs:
           python -m pip install --upgrade pip setuptools
           pip install meson
 
+      - name: Setup Rust for scuisei
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.93.0'
+
       - name: Setup MSVC
         if: matrix.config.os == 'windows-latest' && matrix.config.msvc == true
         uses: ilammy/msvc-dev-cmd@v1
@@ -164,6 +169,9 @@ jobs:
 
       - name: Run test
         run: meson test -C build --verbose "gtest main"
+
+      - name: Test scuisei detector
+        run: cargo test --locked --release --lib --manifest-path subprojects/scuisei-rs-e4de7913c93e2068b88db3045ccd0144b547e5b8/aegisub/Cargo.toml
 
       # Windows artifacts
       - name: Generate Windows installer

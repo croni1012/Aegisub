@@ -104,6 +104,7 @@ std::vector<int> Load(agi::fs::path const& filename) {
 
 	std::string header;
 	getline(is, header);
+	if (!header.empty() && header.back() == '\r') header.pop_back();
 
 	if (header == "# keyframe format v1") return agi_keyframes(is);
 	if (header.starts_with("# XviD 2pass stat file")) return enumerated_keyframes(is, xvid);

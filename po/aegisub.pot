@@ -10458,7 +10458,7 @@ msgid "A&utomation"
 msgstr ""
 
 #: default_menu.json:0
-msgid "Muteki Fansub"
+msgid "Kintsugi Fansub"
 msgstr ""
 
 #: default_menu.json:0
@@ -10745,4 +10745,58 @@ msgstr ""
 
 #: ../src/dialog_ai_connection.cpp:215
 msgid "Changing this could cause issues."
+msgstr ""
+
+#: ../src/command/keyframe.cpp ../src/keyframe_generation.cpp
+msgid "Load Keyframes from Video"
+msgstr ""
+
+#: ../src/command/keyframe.cpp
+msgid "Detect scene changes in the current video and load them as keyframes"
+msgstr ""
+
+#: ../src/keyframe_generation.cpp
+msgid "Analyzing scene changes..."
+msgstr ""
+
+#: ../src/keyframe_generation.cpp
+#, c-format
+msgid "Analyzing video: %d / %d frames"
+msgstr ""
+
+#: ../src/keyframe_generation.cpp
+msgid "Refining scene changes..."
+msgstr ""
+
+#: ../src/keyframe_generation.cpp
+msgid "Could not generate keyframes: "
+msgstr ""
+
+#: ../src/command/time.cpp
+msgid "Intelligently Fix Selected Lines..."
+msgstr ""
+
+#: ../src/command/time.cpp
+msgid "Intelligently Fix Selected Lines"
+msgstr ""
+
+#: ../src/command/time.cpp
+msgid "Load scene keyframes if needed and intelligently fix the timing of selected lines"
+msgstr ""
+
+#: ../src/command/time.cpp
+#, c-format
+msgid "Could not load the built-in timing fixer:\n%s"
+msgstr ""
+
+#: ../src/command/help.cpp
+msgid "&Documentation..."
+msgstr ""
+
+#: ../src/command/help.cpp
+msgid "Kintsugi Fansub Documentation"
+msgstr ""
+
+#: ../src/command/help.cpp
+msgid "Open the Kintsugi Fansub Aegisub documentation"
 msgstr ""

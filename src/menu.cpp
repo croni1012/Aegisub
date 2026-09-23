@@ -579,14 +579,8 @@ class AutomationMenu final : public wxMenu {
 
 		auto macros = config::global_scripts->GetMacros();
 		boost::push_back(macros, c->local_scripts->GetMacros());
-		if (macros.empty()) {
-			if (mutekiOnly) {
-				if (availability_changed)
-					availability_changed(false);
-			}
-			else {
-				Append(-1, _("No Automation macros loaded"))->Enable(false);
-			}
+		if (macros.empty() && !mutekiOnly) {
+			Append(-1, _("No Automation macros loaded"))->Enable(false);
 			return;
 		}
 
@@ -614,13 +608,12 @@ class AutomationMenu final : public wxMenu {
 			}
 		}
 		top.Sort();
-		if (mutekiOnly && top.subitems.empty()) {
-			if (availability_changed)
-				availability_changed(false);
-			return;
-		}
-
 		top.GenerateMenu(this, this);
+		if (mutekiOnly) {
+			if (!top.subitems.empty()) AppendSeparator();
+			cm->AddCommand(cmd::get("help/kintsugi"), this);
+			all_items.push_back(GetMenuItems().back());
+		}
 		if (mutekiOnly && availability_changed)
 			availability_changed(true);
 	}

@@ -9,7 +9,7 @@
         { "submenu" : "main/audio",    "text" : "&Audio" },
         { "submenu" : "main/ai",       "text" : "A&I" },
         { "special" : "automation",    "text" : "A&utomation" },
-        { "special" : "muteki",    "text" : "Muteki Fansub" },
+        { "special" : "muteki",    "text" : "Kintsugi Fansub" },
         { "submenu" : "main/window",   "text" : "Window" },
         { "submenu" : "main/help",     "text" : "&Help", "special" : "help" }
     ],

@@ -1,3 +1,9 @@
+Verzió 5.1 ---
+https://github.com/croni1012/Aegisub/releases/download/v5.1/aegisub-nyaa-edition-v5.1-update.zip
+- https://github.com/eldonishere/scuisei-rs beillesztése kulcsképkockák felismeréséhez
+- Intelligens időzítés
+- Ékezetes számítógép nevek a scripteknél
+
 Verzió 5.0 ---
 https://github.com/croni1012/Aegisub/releases/download/v5.0/aegisub-nyaa-edition-v5.0-update.zip
 - Dark mód, amit külön be kell kapcsolni, új ikonokkal és külön testreszabható színekkel

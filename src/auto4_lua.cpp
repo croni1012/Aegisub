@@ -71,6 +71,7 @@
 #include <boost/scope_exit.hpp>
 #include <cassert>
 #include <mutex>
+#include <optional>
 #include <wx/clipbrd.h>
 #include <wx/log.h>
 #include <wx/msgdlg.h>
@@ -622,6 +623,8 @@ namespace {
 	};
 	class LuaScript final : public Script {
 		lua_State *L = nullptr;
+		std::optional<std::string> source;
+		std::vector<std::unique_ptr<cmd::Command>> private_macros;
 
 		std::string name;
 		std::string description;
@@ -642,7 +645,10 @@ namespace {
 
 	public:
 		LuaScript(agi::fs::path const& filename);
+		LuaScript(std::string_view name, std::string_view source);
 		~LuaScript() { Destroy(); }
+		bool IsBuiltin() const { return source.has_value(); }
+		void OwnCommand(std::unique_ptr<cmd::Command> command) { private_macros.push_back(std::move(command)); }
 
 		void RegisterCommand(LuaCommand *command);
 		void UnregisterCommand(LuaCommand *command);
@@ -666,6 +672,13 @@ namespace {
 
 	LuaScript::LuaScript(agi::fs::path const& filename)
 	: Script(filename)
+	{
+		Create();
+	}
+
+	LuaScript::LuaScript(std::string_view name, std::string_view source)
+	: Script(agi::fs::path(std::string(name)))
+	, source(std::string(source))
 	{
 		Create();
 	}
@@ -757,8 +770,12 @@ namespace {
 		lua_settable(L, LUA_GLOBALSINDEX);
 		stackcheck.check_stack(0);
 
-		// load user script
-		if (!LoadFile(L, GetFilename())) {
+		// Built-in scripts are embedded in the executable, with privately owned
+		// commands so reloading Automation scripts cannot replace them.
+		bool script_loaded = source
+			? luaL_loadbuffer(L, source->data(), source->size(), GetFilename().string().c_str()) == 0
+			: LoadFile(L, GetFilename());
+		if (!script_loaded) {
 			description = get_string_or_default(L, 1);
 			lua_pop(L, 1);
 			return;
@@ -824,8 +841,11 @@ namespace {
 
 		// loops backwards because commands remove themselves from macros when
 		// they're unregistered
-		for (int i = macros.size() - 1; i >= 0; --i)
-			cmd::unreg(macros[i]->name());
+		if (IsBuiltin())
+			private_macros.clear();
+		else
+			for (int i = macros.size() - 1; i >= 0; --i)
+				cmd::unreg(macros[i]->name());
 
 		filters.clear();
 
@@ -968,6 +988,10 @@ namespace {
 	{
 		static std::mutex mutex;
 		auto command = std::make_unique<LuaCommand>(L);
+		if (auto script = LuaScript::GetScriptObject(L); script->IsBuiltin()) {
+			script->OwnCommand(std::move(command));
+			return 0;
+		}
 		{
 			std::lock_guard<std::mutex> lock(mutex);
 			cmd::reg(std::move(command));
@@ -1077,7 +1101,8 @@ namespace {
 
 	void LuaCommand::operator()(agi::Context *c)
 	{
-		AddAutomationRecent(name());
+		if (!LuaScript::GetScriptObject(L)->IsBuiltin())
+			AddAutomationRecent(name());
 
 		c->textSelectionController->DropStagedChanges();
 		LuaStackcheck stackcheck(L);
@@ -1321,6 +1346,10 @@ namespace {
 }
 
 namespace Automation4 {
+	std::unique_ptr<Script> CreateLuaScriptFromMemory(std::string_view name, std::string_view source) {
+		return std::make_unique<LuaScript>(name, source);
+	}
+
 	LuaScriptFactory::LuaScriptFactory()
 	: ScriptFactory("Lua", "*.lua,*.moon")
 	{

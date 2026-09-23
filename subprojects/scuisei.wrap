@@ -1,0 +1,6 @@
+[wrap-file]
+directory = scuisei-rs-e4de7913c93e2068b88db3045ccd0144b547e5b8
+source_url = https://codeload.github.com/eldonishere/scuisei-rs/tar.gz/e4de7913c93e2068b88db3045ccd0144b547e5b8
+source_filename = scuisei-rs-e4de7913c93e2068b88db3045ccd0144b547e5b8.tar.gz
+source_hash = 662a5b166144fa7a072db81feca448bc3b8c5c587086fa01548bba50680e3d7c
+patch_directory = scuisei

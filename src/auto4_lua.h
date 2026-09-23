@@ -30,6 +30,8 @@
 #include "auto4_base.h"
 
 #include <deque>
+#include <memory>
+#include <string_view>
 #include <vector>
 #include <wx/string.h>
 
@@ -39,6 +41,10 @@ class wxWindow;
 struct lua_State;
 
 namespace Automation4 {
+	/// Load a built-in Lua script without touching the filesystem or the global
+	/// command registry. The returned script owns its macros and their Lua state.
+	std::unique_ptr<Script> CreateLuaScriptFromMemory(std::string_view name, std::string_view source);
+
 	/// @class LuaAssFile
 	/// @brief Object wrapping an AssFile object for modification through Lua
 	class LuaAssFile {

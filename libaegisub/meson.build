@@ -35,6 +35,7 @@ libaegisub_src = [
     'common/option_value.cpp',
     'common/parser.cpp',
     'common/path.cpp',
+    'common/scuisei.cpp',
     'common/thesaurus.cpp',
     'common/unicode.cpp',
     'common/util.cpp',

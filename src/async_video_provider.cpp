@@ -391,6 +391,29 @@ void AsyncVideoProvider::SetColorSpace(std::string_view matrix) {
 	});
 }
 
+void AsyncVideoProvider::ProcessFramesForAnalysis(
+	std::function<void(int, VideoFrame const&)> const& consume,
+	std::function<bool()> const& cancelled) {
+	worker->Sync([&] {
+		try {
+			VideoFrame frame;
+			for (int n = 0, count = source_provider->GetFrameCount(); n < count; ++n) {
+				if (cancelled()) break;
+				source_provider->GetFrameForAnalysis(n, frame);
+				if (cancelled()) break;
+				consume(n, frame);
+			}
+		}
+		catch (...) {
+			// Keep the original error. Providers also restore their normal format
+			// on the next display request if this best-effort cleanup fails.
+			try { source_provider->EndAnalysis(); } catch (...) { }
+			throw;
+		}
+		source_provider->EndAnalysis();
+	});
+}
+
 wxDEFINE_EVENT(EVT_FRAME_READY, FrameReadyEvent);
 wxDEFINE_EVENT(EVT_VIDEO_ERROR, VideoProviderErrorEvent);
 wxDEFINE_EVENT(EVT_SUBTITLES_ERROR, SubtitlesProviderErrorEvent);

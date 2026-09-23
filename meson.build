@@ -485,6 +485,8 @@ else
     endif
 endif
 
+deps += subproject('scuisei').get_variable('scuisei_dep')
+
 subdir('automation')
 subdir('libaegisub')
 subdir('packages')

@@ -20,6 +20,7 @@
 #include <libaegisub/fs.h>
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -148,6 +149,11 @@ public:
 	/// @brief time  Exact start time of the frame in seconds
 	/// @brief raw   Get raw frame without subtitles
 	std::shared_ptr<VideoFrame> GetFrame(int frame, double time, bool raw = false);
+
+	/// Run one sequential analysis job on the provider queue, without per-frame
+	/// thread handoffs or the display cache. Callbacks must not access the GUI.
+	void ProcessFramesForAnalysis(std::function<void(int, VideoFrame const&)> const& consume,
+	                             std::function<bool()> const& cancelled);
 
 	/// @brief Synchronously get the subtitles with transparent background
 	/// @brief time  Exact start time of the frame in seconds

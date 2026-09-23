@@ -53,6 +53,8 @@ public:
 	VideoProviderCache(std::unique_ptr<VideoProvider> master) : master(std::move(master)) { }
 
 	void GetFrame(int n, VideoFrame &frame) override;
+	void GetFrameForAnalysis(int n, VideoFrame &frame) override { master->GetFrameForAnalysis(n, frame); }
+	void EndAnalysis() override { master->EndAnalysis(); }
 
 	void SetColorSpace(std::string const& m) override {
 		cache.clear();

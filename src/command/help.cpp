@@ -101,7 +101,7 @@ struct help_video final : public Command {
 		wxLaunchDefaultBrowser("https://aegisub.org/docs/latest/visual_typesetting/",
 			wxBROWSER_NEW_WINDOW);
 		// Opened second so it is the page in front, being the one with the pictures.
-		wxLaunchDefaultBrowser("https://mutekifansub.hu/public/aegisub-docs/?lang=en",
+		wxLaunchDefaultBrowser("https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/?lang=en",
 			wxBROWSER_NEW_WINDOW);
 	}
 };
@@ -117,10 +117,22 @@ struct help_website final : public Command {
 		wxLaunchDefaultBrowser("https://aegisub.org/", wxBROWSER_NEW_WINDOW);
 	}
 };
+
+struct help_kintsugi final : public Command {
+	CMD_NAME("help/kintsugi")
+	CMD_ICON(contents_button)
+	STR_MENU("&Documentation...")
+	STR_DISP("Kintsugi Fansub Documentation")
+	STR_HELP("Open the Kintsugi Fansub Aegisub documentation")
+	void operator()(agi::Context *) override {
+		wxLaunchDefaultBrowser("https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/", wxBROWSER_NEW_WINDOW);
+	}
+};
 }
 
 namespace cmd {
 	void init_help() {
+		reg(std::make_unique<help_kintsugi>());
 		reg(std::make_unique<help_bugs>());
 		reg(std::make_unique<help_contents>());
 		reg(std::make_unique<help_irc>());

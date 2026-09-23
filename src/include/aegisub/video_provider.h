@@ -48,6 +48,11 @@ public:
 	/// Override this method to actually get frames
 	virtual void GetFrame(int n, VideoFrame &frame)=0;
 
+	/// Sequential, subtitle-free analysis may bypass display caches and use
+	/// reduced resolution. EndAnalysis restores normal output, also on cancellation.
+	virtual void GetFrameForAnalysis(int n, VideoFrame &frame) { GetFrame(n, frame); }
+	virtual void EndAnalysis() { }
+
 	/// Set the YCbCr matrix to the specified one
 	///
 	/// Providers are free to disregard this, and should if the requested

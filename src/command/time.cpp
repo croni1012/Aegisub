@@ -36,8 +36,12 @@
 #include "../async_video_provider.h"
 #include "../audio_controller.h"
 #include "../audio_timing.h"
+#include "../auto4_lua.h"
+#include "../compat.h"
 #include "../dialogs.h"
+#include "../format.h"
 #include "../include/aegisub/context.h"
+#include "../keyframe_generation.h"
 #include "../libresrc/libresrc.h"
 #include "../project.h"
 #include "../selection_controller.h"
@@ -45,6 +49,7 @@
 
 
 #include <algorithm>
+#include <wx/msgdlg.h>
 
 namespace {
 using cmd::Command;
@@ -69,6 +74,43 @@ struct validate_adjoinable : public Command {
 				return false;
 		}
 		return true;
+	}
+};
+
+struct time_smart_fix final : public Command {
+	std::unique_ptr<Automation4::Script> script;
+
+	CMD_NAME("time/smart_fix")
+	STR_MENU("Intelligently Fix Selected Lines...")
+	STR_DISP("Intelligently Fix Selected Lines")
+	STR_HELP("Load scene keyframes if needed and intelligently fix the timing of selected lines")
+	CMD_TYPE(COMMAND_VALIDATE)
+
+	bool Validate(const agi::Context *c) override {
+		if (!c->project->VideoProvider() || !c->project->Timecodes().IsLoaded()) return false;
+		auto const& selected = c->selectionController->GetSelectedSet();
+		return std::any_of(selected.begin(), selected.end(), [](auto line) { return !line->Comment; });
+	}
+
+	void operator()(agi::Context *c) override {
+		if (!Validate(c)) return;
+		if (!script)
+			script = Automation4::CreateLuaScriptFromMemory("builtin-smart-timing.lua", GET_DEFAULT_CONFIG(smart_timing));
+		if (!script->GetLoadedState() || script->GetMacros().size() != 1) {
+			wxMessageBox(fmt_tl("Could not load the built-in timing fixer:\n%s", script->GetDescription()),
+				StrDisplay(c), wxOK | wxICON_ERROR, c->parent);
+			script.reset();
+			return;
+		}
+		auto macro = script->GetMacros().front();
+		if (!macro->Validate(c)) return;
+		// The video's codec I-frames are not a loaded scene-change list.
+		// Preserve manually loaded lists, and generate one only when needed.
+		if ((!c->project->CanCloseKeyframes() || c->project->Keyframes().empty()) &&
+			!GenerateKeyframesFromVideo(c)) return;
+		c->videoController->Stop();
+		c->audioController->Stop();
+		(*macro)(c);
 	}
 };
 
@@ -415,6 +457,7 @@ namespace cmd {
 		reg(std::make_unique<time_next>());
 		reg(std::make_unique<time_prev>());
 		reg(std::make_unique<time_shift>());
+		reg(std::make_unique<time_smart_fix>());
 		reg(std::make_unique<time_snap_end_video>());
 		reg(std::make_unique<time_snap_scene>());
 		reg(std::make_unique<time_snap_start_video>());

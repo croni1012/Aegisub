@@ -30,6 +30,8 @@
 #include "libresrc/libresrc.h"
 #include "format.h"
 #include "version.h"
+#include "compat.h"
+#include <libaegisub/scuisei.h>
 
 #include <wx/button.h>
 #include <wx/dialog.h>
@@ -137,6 +139,7 @@ void ShowAboutDialog(wxWindow *parent) {
 	// Replace copyright symbol
 	wxChar copySymbol = 0xA9;
 	aboutString.Replace("(c)", wxString(copySymbol));
+	aboutString += "\n\n" + to_wx(agi::scuisei::License());
 
 	wxTextCtrl *textctrl = new wxTextCtrl(&d, -1, aboutString, wxDefaultPosition, wxSize(-1, 200), wxTE_MULTILINE | wxTE_READONLY | wxBORDER_NONE);
 

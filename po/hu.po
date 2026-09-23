@@ -10932,9 +10932,8 @@ msgid "A&utomation"
 msgstr "A&utomatizáció"
 
 #: default_menu.json:0
-#, fuzzy
-msgid "Muteki Fansub"
-msgstr "Muteki frissítés"
+msgid "Kintsugi Fansub"
+msgstr "Kintsugi Fansub"
 
 #: default_menu.json:0
 msgid "Vie&w"
@@ -12075,3 +12074,57 @@ msgstr "API alap URL:"
 #: ../src/dialog_ai_connection.cpp:215
 msgid "Changing this could cause issues."
 msgstr "Ennek a módosítása problémákat okozhat."
+
+#: ../src/command/keyframe.cpp ../src/keyframe_generation.cpp
+msgid "Load Keyframes from Video"
+msgstr "Kulcskockák betöltése a videóból"
+
+#: ../src/command/keyframe.cpp
+msgid "Detect scene changes in the current video and load them as keyframes"
+msgstr "Jelenetváltások felismerése az aktuális videóban és betöltésük kulcskockaként"
+
+#: ../src/keyframe_generation.cpp
+msgid "Analyzing scene changes..."
+msgstr "Jelenetváltások elemzése..."
+
+#: ../src/keyframe_generation.cpp
+#, c-format
+msgid "Analyzing video: %d / %d frames"
+msgstr "Videó elemzése: %d / %d képkocka"
+
+#: ../src/keyframe_generation.cpp
+msgid "Refining scene changes..."
+msgstr "Jelenetváltások pontosítása..."
+
+#: ../src/keyframe_generation.cpp
+msgid "Could not generate keyframes: "
+msgstr "Nem sikerült előállítani a kulcskockákat: "
+
+#: ../src/command/time.cpp
+msgid "Intelligently Fix Selected Lines..."
+msgstr "Kijelölt sorok intelligens javítása..."
+
+#: ../src/command/time.cpp
+msgid "Intelligently Fix Selected Lines"
+msgstr "Kijelölt sorok intelligens javítása"
+
+#: ../src/command/time.cpp
+msgid "Load scene keyframes if needed and intelligently fix the timing of selected lines"
+msgstr "Jelenetváltási kulcskockák betöltése szükség esetén és a kijelölt sorok időzítésének intelligens javítása"
+
+#: ../src/command/time.cpp
+#, c-format
+msgid "Could not load the built-in timing fixer:\n%s"
+msgstr "Nem sikerült betölteni a beépített időzítőjavítót:\n%s"
+
+#: ../src/command/help.cpp
+msgid "&Documentation..."
+msgstr "&Dokumentáció..."
+
+#: ../src/command/help.cpp
+msgid "Kintsugi Fansub Documentation"
+msgstr "Kintsugi Fansub dokumentáció"
+
+#: ../src/command/help.cpp
+msgid "Open the Kintsugi Fansub Aegisub documentation"
+msgstr "A Kintsugi Fansub Aegisub-dokumentációjának megnyitása"

@@ -82,6 +82,7 @@
     "main/timing" : [
         { "command" : "time/shift" },
         { "command" : "tool/time/postprocess" },
+        { "command" : "time/smart_fix" },
         { "command" : "tool/time/kanji" },
         {},
         { "command" : "time/snap/start_video" },
@@ -109,6 +110,7 @@
         { "recent" : "Timecodes" },
         {},
         { "command" : "keyframe/open" },
+        { "command" : "keyframe/from_video" },
         { "command" : "keyframe/save" },
         { "command" : "keyframe/close" },
         { "recent" : "Keyframes" },

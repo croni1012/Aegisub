@@ -46,6 +46,19 @@ TEST(lagi_keyframe, bad_files) {
 	EXPECT_THROW(Load("data/keyframe/garbage.txt"), agi::InvalidInputException);
 }
 
+TEST(lagi_keyframe, portable_line_endings) {
+	for (auto newline : {"\n", "\r\n"}) {
+		{
+			std::ofstream file("data/keyframe/line-endings.txt", std::ios::binary);
+			ASSERT_TRUE(file.is_open());
+			file << "# keyframe format v1" << newline << "fps 0" << newline
+			     << "0" << newline << "50" << newline << "99" << newline;
+			ASSERT_TRUE(file.good());
+		}
+		EXPECT_EQ(Load("data/keyframe/line-endings.txt"), (std::vector<int>{0, 50, 99}));
+	}
+}
+
 TEST(lagi_keyframe, xvid) {
 	std::vector<int> expected = {
 		0, 52, 53, 55, 57, 80, 114, 168, 182, 234, 240, 242, 244, 250, 251,

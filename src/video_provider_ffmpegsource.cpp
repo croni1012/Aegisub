@@ -42,6 +42,7 @@
 
 #include <libaegisub/fs.h>
 
+#include <algorithm>
 #include <string_view>
 
 namespace {
@@ -82,13 +83,21 @@ class FFmpegSourceVideoProvider final : public VideoProvider, FFmpegSourceProvid
 	char FFMSErrMsg[1024];          ///< FFMS error message
 	FFMS_ErrorInfo ErrInfo;         ///< FFMS error codes/messages
 	bool has_audio = false;
+	bool analysis_mode = false;
 
 	void LoadVideo(agi::fs::path const& filename, std::string_view colormatrix);
+	void SetAnalysisMode(bool enabled);
+	void ReadFrame(int n, VideoFrame &out);
 
 public:
 	FFmpegSourceVideoProvider(agi::fs::path const& filename, std::string_view colormatrix, agi::BackgroundRunner *br);
 
 	void GetFrame(int n, VideoFrame &out) override;
+	void GetFrameForAnalysis(int n, VideoFrame &out) override {
+		SetAnalysisMode(true);
+		ReadFrame(n, out);
+	}
+	void EndAnalysis() override { SetAnalysisMode(false); }
 
 	void SetColorSpace(std::string const& matrix) override {
 		if (matrix == ColorSpace) return;
@@ -302,62 +311,94 @@ void FFmpegSourceVideoProvider::LoadVideo(agi::fs::path const& filename, std::st
 }
 
 void FFmpegSourceVideoProvider::GetFrame(int n, VideoFrame &out) {
+	SetAnalysisMode(false);
+	ReadFrame(n, out);
+}
+
+void FFmpegSourceVideoProvider::SetAnalysisMode(bool enabled) {
+	if (enabled == analysis_mode) return;
+	int width = Width, height = Height;
+	if (enabled) {
+		// Work in display orientation so portrait/rotated videos obey the same
+		// 160 x 96 bounds as the detector. Rotation itself then costs very little.
+		int display_width = GetWidth(), display_height = GetHeight();
+		width = std::min(display_width, 160);
+		height = std::max(1, static_cast<int>(int64_t{display_height} * width / display_width));
+		if (height > 96) {
+			height = std::min(display_height, 96);
+			width = std::max(1, static_cast<int>(int64_t{display_width} * height / display_height));
+		}
+		if (VideoInfo->Rotation % 180 != 0) std::swap(width, height);
+	}
+	const int formats[] = { FFMS_GetPixFmt("bgra"), -1 };
+	// Mark the format as needing restoration even if setting it fails midway.
+	analysis_mode = true;
+	if (FFMS_SetOutputFormatV2(VideoSource, formats, width, height,
+	                          enabled ? FFMS_RESIZER_POINT : FFMS_RESIZER_BICUBIC, &ErrInfo))
+		throw VideoDecodeError(std::string("Failed to set video analysis format: ") + ErrInfo.Buffer);
+	analysis_mode = enabled;
+}
+
+void FFmpegSourceVideoProvider::ReadFrame(int n, VideoFrame &out) {
 	n = mid(0, n, GetFrameCount() - 1);
 
 	auto frame = FFMS_GetFrame(VideoSource, n, &ErrInfo);
 	if (!frame)
 		throw VideoDecodeError(std::string("Failed to retrieve frame: ") +  ErrInfo.Buffer);
 
-	out.data.assign(frame->Data[0], frame->Data[0] + frame->Linesize[0] * Height);
+	// FFMS has already converted and scaled to the requested output size.
+	int const width = frame->ScaledWidth, height = frame->ScaledHeight;
+
+	out.data.assign(frame->Data[0], frame->Data[0] + frame->Linesize[0] * height);
 	out.flipped = false;
-	out.width = Width;
-	out.height = Height;
+	out.width = width;
+	out.height = height;
 	out.pitch = frame->Linesize[0];
 
 	// Handle flip
 	if (VideoInfo->Flip > 0)
-		for (int x = 0; x < Height; ++x)
-			for (int y = 0; y < Width / 2; ++y)
+		for (int x = 0; x < height; ++x)
+			for (int y = 0; y < width / 2; ++y)
 				for (int ch = 0; ch < 4; ++ch)
-					std::swap(out.data[frame->Linesize[0] * x + 4 * y + ch], out.data[frame->Linesize[0] * x + 4 * (Width - 1 - y) + ch]);
+					std::swap(out.data[frame->Linesize[0] * x + 4 * y + ch], out.data[frame->Linesize[0] * x + 4 * (width - 1 - y) + ch]);
 
 	else if (VideoInfo->Flip < 0)
-		for (int x = 0; x < Height / 2; ++x)
-			for (int y = 0; y < Width; ++y)
+		for (int x = 0; x < height / 2; ++x)
+			for (int y = 0; y < width; ++y)
 				for (int ch = 0; ch < 4; ++ch)
-					std::swap(out.data[frame->Linesize[0] * x + 4 * y + ch], out.data[frame->Linesize[0] * (Height - 1 - x) + 4 * y + ch]);
+					std::swap(out.data[frame->Linesize[0] * x + 4 * y + ch], out.data[frame->Linesize[0] * (height - 1 - x) + 4 * y + ch]);
 
 	// Handle rotation
 	if (VideoInfo->Rotation % 360 == 180 || VideoInfo->Rotation % 360 == -180) {
 		std::vector<unsigned char> data(std::move(out.data));
-		out.data.resize(Width * Height * 4);
-		for (int x = 0; x < Height; ++x)
-			for (int y = 0; y < Width; ++y)
+		out.data.resize(width * height * 4);
+		for (int x = 0; x < height; ++x)
+			for (int y = 0; y < width; ++y)
 				for (int ch = 0; ch < 4; ++ch)
-					out.data[4 * (Width * x + y) + ch] = data[frame->Linesize[0] * (Height - 1 - x) + 4 * (Width - 1 - y) + ch];
-		out.pitch = 4 * Width;
+					out.data[4 * (width * x + y) + ch] = data[frame->Linesize[0] * (height - 1 - x) + 4 * (width - 1 - y) + ch];
+		out.pitch = 4 * width;
 	}
 	else if (VideoInfo->Rotation % 180 == 90 || VideoInfo->Rotation % 360 == -270) {
 		std::vector<unsigned char> data(std::move(out.data));
-		out.data.resize(Width * Height * 4);
-		for (int x = 0; x < Width; ++x)
-			for (int y = 0; y < Height; ++y)
+		out.data.resize(width * height * 4);
+		for (int x = 0; x < width; ++x)
+			for (int y = 0; y < height; ++y)
 				for (int ch = 0; ch < 4; ++ch)
-					out.data[4 * (Height * x + y) + ch] = data[frame->Linesize[0] * y + 4 * (Width - 1 - x) + ch];
-		out.width = Height;
-		out.height = Width;
-		out.pitch = 4 * Height;
+					out.data[4 * (height * x + y) + ch] = data[frame->Linesize[0] * y + 4 * (width - 1 - x) + ch];
+		out.width = height;
+		out.height = width;
+		out.pitch = 4 * height;
 	}
 	else if (VideoInfo->Rotation % 180 == 270 || VideoInfo->Rotation % 360 == -90) {
 		std::vector<unsigned char> data(std::move(out.data));
-		out.data.resize(Width * Height * 4);
-		for (int x = 0; x < Width; ++x)
-			for (int y = 0; y < Height; ++y)
+		out.data.resize(width * height * 4);
+		for (int x = 0; x < width; ++x)
+			for (int y = 0; y < height; ++y)
 				for (int ch = 0; ch < 4; ++ch)
-					out.data[4 * (Height * x + y) + ch] = data[frame->Linesize[0] * (Height - 1 - y) + 4 * x + ch];
-		out.width = Height;
-		out.height = Width;
-		out.pitch = 4 * Height;
+					out.data[4 * (height * x + y) + ch] = data[frame->Linesize[0] * (height - 1 - y) + 4 * x + ch];
+		out.width = height;
+		out.height = width;
+		out.pitch = 4 * height;
 	}
 }
 }

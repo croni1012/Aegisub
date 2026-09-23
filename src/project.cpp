@@ -541,9 +541,10 @@ void Project::DoLoadKeyframes(agi::fs::path const& path) {
 	AnnounceKeyframesModified(keyframes);
 }
 
-void Project::LoadKeyframes(agi::fs::path path) {
+bool Project::LoadKeyframes(agi::fs::path path) {
 	try {
 		DoLoadKeyframes(path);
+		return true;
 	}
 	catch (agi::fs::FileSystemError const& e) {
 		ShowError(e.GetMessage());
@@ -557,6 +558,7 @@ void Project::LoadKeyframes(agi::fs::path path) {
 		ShowError(_("Keyframes file in unknown format: ") + to_wx(e.GetMessage()));
 		config::mru->Remove("Keyframes", path);
 	}
+	return false;
 }
 
 void Project::CloseKeyframes() {

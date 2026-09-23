@@ -2531,7 +2531,7 @@ void VisualToolTransform::LockMenus(bool locked) {
 	wxMenuBar *bar = frame->GetMenuBar();
 	if (!bar) return;
 
-	for (const char *title : {"A&I", "A&utomation", "Muteki Fansub"}) {
+	for (const char *title : {"A&I", "A&utomation", "Kintsugi Fansub"}) {
 		int at = bar->FindMenu(wxGetTranslation(title));
 		if (at != wxNOT_FOUND) bar->EnableTop(at, !locked);
 	}

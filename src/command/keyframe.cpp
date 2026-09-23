@@ -33,6 +33,7 @@
 
 #include "../compat.h"
 #include "../include/aegisub/context.h"
+#include "../keyframe_generation.h"
 #include "../libresrc/libresrc.h"
 #include "../options.h"
 #include "../project.h"
@@ -81,6 +82,22 @@ struct keyframe_open final : public Command {
 	}
 };
 
+struct keyframe_from_video final : public Command {
+    CMD_NAME("keyframe/from_video")
+    CMD_ICON(open_keyframes_menu)
+    STR_MENU("Load Keyframes from Video")
+    STR_DISP("Load Keyframes from Video")
+    STR_HELP("Detect scene changes in the current video and load them as keyframes")
+    CMD_TYPE(COMMAND_VALIDATE)
+
+    bool Validate(const agi::Context *c) override {
+        return c->project->VideoProvider() != nullptr;
+    }
+    void operator()(agi::Context *c) override {
+        GenerateKeyframesFromVideo(c);
+    }
+};
+
 struct keyframe_save final : public Command {
 	CMD_NAME("keyframe/save")
 	CMD_ICON(save_keyframes_menu)
@@ -107,6 +124,7 @@ namespace cmd {
 	void init_keyframe() {
 		reg(std::make_unique<keyframe_close>());
 		reg(std::make_unique<keyframe_open>());
+		reg(std::make_unique<keyframe_from_video>());
 		reg(std::make_unique<keyframe_save>());
 	}
 }

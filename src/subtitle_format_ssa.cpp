@@ -50,7 +50,7 @@ void SsaSubtitleFormat::WriteFile(const AssFile *src, agi::fs::path const& filen
 		GetAegisubLongVersionString() +
 		" -- get from here: https://github.com/croni1012/Aegisub/releases");
 	file.WriteLineToFile("; See what is new in this version: "
-		"https://mutekifansub.hu/public/aegisub-docs/");
+		"https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/");
 	file.WriteLineToFile("; https://aegisub.org/");
 	for (auto const& line : src->Info)
 		file.WriteLineToFile(boost::iequals(line.Key(), "scripttype") ? "ScriptType: v4.00" : line.GetEntryData());
