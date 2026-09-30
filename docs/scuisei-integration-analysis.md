@@ -102,13 +102,17 @@ Források: [Cargo-beállítások](https://github.com/eldonishere/scuisei-rs/blob
 5. A lista a `Project` közös kulcskockaállapotába kerül, és ugyanaz az értesítés
    frissíti a videós és audiós nézeteket, mint fájlból betöltéskor.
    Az Automation `aegisub.keyframes()` is ezt az állapotot olvassa.
-6. A generált lista menthető és bezárható. A `?user/scuisei-keyframes`
-   könyvtárban minden sikeres elemzés egyedi, tartós AGI fájlt kap;
-   a mentett ASS erre hivatkozik, így újranyitáskor is elérhető.
-7. Nincs automatikus eredmény-újrafelhasználás: minden indítás új elemzés.
-   A tartós fájlok nem törlődnek automatikusan, mert mentett projektek
-   hivatkozhatnak rájuk. Más gépre költöztetéskor ezeket is másolni kell,
-   vagy a szokásos Kulcskockák mentése paranccsal a projekt mellé menteni.
+6. A generált és a kézzel betöltött lista a `?user/loaded-keyframes`
+   könyvtárba kerül, például `epizód.mkv.keyframes.txt` néven. Új mentéskor
+   ugyanez a fájl felülíródik. Az ASS-be nem mentünk kulcskockahivatkozást;
+   a régi `Keyframes File` mezőket beolvasáskor figyelmen kívül hagyjuk.
+7. Videónyitáskor a létező, érvényes listát automatikusan visszatöltjük.
+   Sérült lista nem akadályozza a videónyitást. A Videó menü elemzőparancsa
+   továbbra is új elemzést kér. A lista keresése közvetlenül a videó nevével,
+   a forrásmappák beállításától függetlenül történik. A korábbi
+   `scuisei-keyframes` fájlok megmaradnak; kézi betöltésükkor az aktuális
+   videó új nevű gyorsítótárába is mentjük őket. A Lua projektadataiban
+   továbbra is elérhető az aktuálisan betöltött lista útvonala.
 
 ## Platformok és korlátok
 
@@ -142,35 +146,105 @@ lista mentése és visszaállítása. Meglévő lista nem veszhet el sikertelen 
 ## Beépített intelligens időzítő
 
 Az Időzítés menü harmadik eleme a **Kijelölt sorok intelligens javítása...**
-(`time/smart_fix`). A felhasználótól kapott `Dynamo.OkosIdozites.lua` 2.1.4
-változata változatlan algoritmussal a program erőforrásai közé kerül
+(`time/smart_fix`). A felhasználótól kapott `Dynamo.OkosIdozites (1).lua` 2.2.1
+időzítési algoritmusa az alábbi kiegészítésekkel a program erőforrásai közé kerül
 (`src/libresrc/smart_timing.lua`). Nem igényel telepített autoload scriptet;
 a korábbi `nyaa.fix-timing.lua` fájlt nem módosítja.
 
 A parancs megnyitott videót, érvényes időbélyegeket és legalább egy kijelölt,
 nem komment sort igényel. Meglévő betöltött kulcskockalistát használ. Ha nincs
-ilyen lista, vagy üres, először a modális jelenetfelismerést futtatja; a videó
+ilyen lista, vagy üres, először modális folyamatjelzővel jelenetfelismerést futtat; a videó
 saját kódolási I-kockái önmagukban nem számítanak betöltött jelenetlistának.
 A jelenetfelismerés megszakítása vagy hibája esetén az időzítő nem indul el.
+A külső script `Dynamo.SmartTiming.Keyframes` modulja helyett ezt a feladatot
+a natív parancs végzi, és a hullámforma jelöléseit is frissíti. Újragenerálás
+a Videó menü kulcskockabetöltési parancsával kérhető.
 
-Ezután megjelennek a script eredeti beállításai. Az alapértékek csak az alsó
+Maga az időzítésjavítás beállítási és folyamatjelző ablak nélkül fut.
+A végén egyetlen OK-gombos üzenet jelenik meg: „x sor időzítése javítva”.
+Csak a ténylegesen módosított időzítésű sorokat számolja, soronként egyszer;
+változatlan eredménynél nullát jelez. Megszakításkor nincs sikerüzenet.
+Az alapértékek csak az alsó
 beszédsorokat javítják, kihagyják a komplex/animált sorokat, védik a nem
 kijelölt szomszédokat, és figyelembe veszik a minimum időtartamot és a CPS-t.
 Az időzítő az Aegisub meglévő Automation tranzakcióját és visszavonását
 használja. A `dynamo.smart_timing` extradata-jelölő az ASS-be is elmenthető;
 az eredeti időkből való újraszámolás megakadályozza az ismételt eltolódást.
 
-A beágyazott Lua-állapotot a natív parancs birtokolja, így a beállítások az
-alkalmazás futása alatt megmaradnak. Makrói privát tulajdonban vannak:
+A beágyazott Lua-állapotot a natív parancs birtokolja; minden indítás friss
+alapértékekkel fut. A szerkesztés a feldolgozás végéig tiltott, de az alkalmazás
+eseménykezelése tovább működik. Makrói privát tulajdonban vannak:
 nem kerülnek be az Automation menübe vagy a legutóbbi makrók listájába,
 és az autoload scriptek újratöltése nem törli őket.
 
-Kilenc célzott teszt ellenőrzi a rés- és átfedéskezelést, a KF-igazítás
+A sorvég előrenyújtásának alapértelmezett határa 750 ms, a folytonosság
+összeköthető résének határa 800 ms, a határértékeket is beleértve. A rés
+80/20%-os megosztása és a minimum időtartam 600 ms-os értéke megmarad.
+A 2.2.1-es változat a frissen összekötött sorok közös határát is ellenőrzi:
+az előrenyújtást az eredeti sorvégtől, a következő sor késését annak eredeti
+kezdetétől méri. Az alkalmazható visszavágás elsőbbséget élvez, a korábbi
+vágás védőablaka pedig külön 100 ms marad. A már KF-en végződő sorra a korábbi
+beépített megőrzési védelem is érvényes; az igazítás nem léphet át a nem
+kijelölt következő sor kezdetén. Írás előtt újabb megszakításellenőrzés fut.
+A beágyazott változat azonosítója `2.2.1-kintsugi.6`; a külső Lua-fájlok
+nem módosulnak.
+
+A Szereplő/Név mező alapján az egymásra beszélő, különböző nevű szereplők
+azonos rétegen és igazításon belül külön belső beszédsávba kerülnek. Anna
+alapsávja mellett András az első, a következő párhuzamos beszélő a második
+átfedési sávot használhatja. A felszabaduló sávban bármely szereplő következő
+megszólalása folytathatja a folytonosságot. A sávoknak saját szomszédsoraik
+vannak; a réteg, stílus, Szereplő/Név és Effektus mező nem íródik át.
+Azonos nevű vagy üres nevű sorokra a hagyományos átfedésjavítás érvényes.
+A név eleji/végi szóközök nem jelentenek új szereplőt.
+
+A különböző szereplők átfedéseit a kis átfedés javítása sem szünteti meg.
+Ha az egyszerre beszélő kijelölt sorok legkorábbi és legkésőbbi eredeti vége
+a folytonossági határon (alapból 800 ms) belül van, közös végidőt kapnak.
+Alapesetben ez a későbbi vég; közeli KF esetén közös KF-végre igazodhatnak.
+Visszavágáskor a meglévő képkockakorlát és az olvasási idő is érvényes,
+előrenyújtáskor a 750 ms-os KF-korlátot minden érintett sor eredeti végétől
+ellenőrzi. Köztes vágáson nem ugrik át, és már KF-en lévő véget nem mozgat
+másik képkockára. A következő kapcsolódó sor kezdetét csak akkor mozgatja
+együtt a véggel, ha az olvashatósági és eredeti átfedési védelmek megengedik.
+Ütközés esetén megőrzi az egyedi időzítést. Nem kijelölt sort nem módosít.
+
+Három vagy több szereplőnél a teljes végidőtartomány férjen a keretbe:
+3,0 / 3,7 / 4,4 másodperces végekből nem készül egy 1,4 másodperces
+láncolt hosszabbítás. A beszédsávokat a mentett eredeti időkből építi fel;
+a szereplőnév is része a változásellenőrzésnek, így az újrafuttatás stabil,
+átnevezéskor pedig újraszámol. A közös végekre igazított csoportok száma
+belső statisztikában is szerepel; a befejező üzenet csak a módosított sorok számát mutatja.
+
+Az eredeti integráció kilenc célzott tesztje ellenőrzi a rés- és átfedéskezelést, a KF-igazítás
 korlátait, a kijelölési széleket, a kihagyott sorokat, a minimum időtartamot,
 a megszakítást, az ismételt futtatást, a megváltozott kulcskockalistát és
 az Aegisub valódi VFR-időkonverzióit.
 
-A Windows felületi próba során a beágyazott script beállítási és összegző
+A 750 ms-os kiegészítés további hat tesztje ellenőrzi a pontosan 542 ms-ra
+levő következő KF-et, a 750/751 ms-os határt, a beállítás módosítását és
+kikapcsolását, a visszavágás elsőbbségét, a már KF-en levő sorvéget és a
+nem kijelölt következő sor védelmét. A kiegészítés teljes Windows-buildje
+sikeres; mind a 29 célzott teszt (15 időzítő és 14 kapcsolódó teszt) lefutott.
+
+A 2.2.1-es frissítés további hat tesztet kapott: 800 ms-os folytonossági
+határ, frissen összekötött határ KF-re igazítása, az eredeti sorvégtől mért
+nyújtási korlát, következő sor késési/időtartam-védelme, külön 100 ms-os
+korábbi-KF védelem és írás előtti megszakítás. A frissítés teljes Windows-buildje
+és mind a 35 célzott teszt (21 időzítő és 14 kapcsolódó teszt) sikeres.
+
+A szereplőalapú sávkezelés és a közös sorvégek további 19 tesztet kaptak:
+két/három párhuzamos beszélő, felszabaduló sáv, rendezetlen sorok, kis
+szándékos átfedés, üres/azonos név, átnevezés, részleges kijelölés és
+újrafuttatás; 800/810 ms-os végkülönbség, közös KF előre/hátra, több sor
+láncolásának korlátja, a következő felirat védelme, köztes jelenetváltás,
+valamint a folytonossági beállítás változtatása és kikapcsolása.
+A teljes Windows-build és mind az 54 célzott teszt (40 időzítő és 14
+kapcsolódó teszt) sikeres. A beágyazott Lua szövege UTF-8-ban kerül az EXE-be;
+a script összegzésének szövege az erőforrás része, a natív menüfordítások
+mindkét magyar MO-fájlban ellenőrizhetők.
+
+A korábbi, ablakos változat Windows felületi próbájában a beágyazott script beállítási és összegző
 ablaka megfelelő méretben, ékezethelyesen jelent meg. Egy 25 fps-es dummy
 videóval, betöltött lista nélkül indítva létrejött a tartós kulcskockafájl;
 a két kijelölt beszédsor 300 ms-os rése a várt 2,24 s-os közös határra
@@ -178,9 +252,13 @@ került, a kijelölt komment változatlan maradt. A mentett ASS tartalmazta a
 kulcskockahivatkozást és az extradata-jelölőket. Egy visszavonás visszaállította
 mindkét eredeti időzítést. A második próba meglévő 0/25/50-es listáját a
 parancs megtartotta, és az 1,03–2,07 s-os sort a várt 0,98–1,98 s-ra igazította.
-A beállítási ablak Mégse/Escape lezárása nem módosította a feliratot.
+Akkor a beállítási ablak Mégse/Escape lezárása nem módosította a feliratot.
+A 2026-09-30-i változat a beállítási és a részletes összegző ablakot már nem nyitja meg;
+helyettük csak a befejező üzenet mutatja a javított sorok számát. Az elkülönített
+wxWidgets-futtatási próba ellenőrizte az ablak nélküli feldolgozást, a szerkesztés
+zárolását és visszaengedését, valamint a magyar folyamatjelző UTF-8 formázását.
 
-Az időzítőt tartalmazó teljes Windows-build és a Linux-build (`b_pch=false`)
+Az eredeti integráció teljes Windows-buildje és Linux-buildje (`b_pch=false`)
 is sikeres. A 23 célzott teszt mindkét platformon lefutott: 9 időzítő-,
 4 Lua-betöltési, 4 detektor- és 6 kulcskockafájl-teszt. A Windows EXE
 és másolata SHA-256 szerint azonos; az új magyar feliratokat mindkét

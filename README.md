@@ -1,6 +1,6 @@
 # Aegisub - nyaa's edition
 
-[See what is new in this version.](https://mutekifansub.hu/public/aegisub-docs/?lang=en)
+[New features – English](docs/new-features/en/README.md) | [Új funkciók – Magyar](docs/new-features/hu/README.md)
 
 Other information is on the main page.
 
