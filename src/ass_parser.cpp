@@ -52,7 +52,6 @@ public:
 		{"Audio File", &ProjectProperties::audio_file},
 		{"Video File", &ProjectProperties::video_file},
 		{"Timecodes File", &ProjectProperties::timecodes_file},
-		{"Keyframes File", &ProjectProperties::keyframes_file},
 		{"Video Zoom Percent", &ProjectProperties::video_zoom},
 		{"Scroll Position", &ProjectProperties::scroll_position},
 		{"Active Line", &ProjectProperties::active_row},
@@ -68,6 +67,10 @@ public:
 	}
 
 	bool ProcessProperty(AssFile *target, std::string const& key, std::string const& value) {
+		// Scene keyframes belong to the loaded video, not the subtitle document.
+		// Consume legacy links in either metadata section without preserving them.
+		if (key == "Keyframes File") return true;
+
 		auto it = fields.find(key);
 		if (it != end(fields)) {
 			using namespace agi::util;

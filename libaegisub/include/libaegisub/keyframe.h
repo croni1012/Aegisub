@@ -28,6 +28,9 @@ std::vector<int> Load(agi::fs::path const& filename);
 /// @param keyframes List of keyframes to save
 void Save(agi::fs::path const& filename, std::vector<int> const& keyframes);
 
+/// Persistent list for a video. Preserve its full filename, including extension.
+agi::fs::path CacheFile(agi::fs::path const& directory, agi::fs::path const& video);
+
 DEFINE_EXCEPTION(KeyframeFormatParseError, agi::InvalidInputException);
 DEFINE_EXCEPTION(UnknownKeyframeFormatError, agi::InvalidInputException);
 }

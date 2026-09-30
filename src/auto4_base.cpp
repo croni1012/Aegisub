@@ -221,8 +221,10 @@ namespace Automation4 {
 		});
 	}
 
-	BackgroundScriptRunner::BackgroundScriptRunner(wxWindow *parent, std::string const& title)
-	: impl(new DialogProgress(parent, to_wx(title)))
+	BackgroundScriptRunner::BackgroundScriptRunner(wxWindow *parent, std::string const& title, bool show_progress)
+	: impl(show_progress ? new DialogProgress(parent, to_wx(title)) : nullptr)
+	, parent(parent)
+	, title(title)
 	{
 	}
 
@@ -232,20 +234,22 @@ namespace Automation4 {
 
 	void BackgroundScriptRunner::Run(std::function<void (ProgressSink*)> task)
 	{
-		impl->Run([&](agi::ProgressSink *ps) {
+		auto run = [&](agi::ProgressSink *ps) {
 			ProgressSink aps(ps, this);
 			task(&aps);
-		});
+		};
+		if (impl) impl->Run(run);
+		else RunBackgroundTaskWithoutDialog(run);
 	}
 
 	wxWindow *BackgroundScriptRunner::GetParentWindow() const
 	{
-		return impl.get();
+		return impl ? impl.get() : parent;
 	}
 
 	std::string BackgroundScriptRunner::GetTitle() const
 	{
-		return from_wx(impl->GetTitle());
+		return impl ? from_wx(impl->GetTitle()) : title;
 	}
 
 	// Script

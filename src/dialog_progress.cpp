@@ -26,20 +26,49 @@
 
 #include <libaegisub/dispatch.h>
 #include <libaegisub/exception.h>
+#include <libaegisub/log.h>
 #include <libaegisub/util_osx.h>
 
 #include <atomic>
+#include <exception>
 #include <wx/button.h>
+#include <wx/evtloop.h>
 #include <wx/gauge.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/utils.h>
 
 #ifdef _MSC_VER
 #include <shobjidl.h>
 #endif
 
 using agi::dispatch::Main;
+
+void RunBackgroundTaskWithoutDialog(std::function<void(agi::ProgressSink *)> task) {
+	class QuietSink final : public agi::ProgressSink {
+	public:
+		void SetIndeterminate() override { }
+		void SetTitle(std::string const&) override { }
+		void SetMessage(std::string const&) override { }
+		void SetProgress(int64_t, int64_t) override { }
+		void Log(std::string const& message) override { LOG_E("background/quiet") << message; }
+		bool IsCancelled() override { return false; }
+	} sink;
+
+	wxWindowDisabler disabler;
+	wxBusyCursor busy;
+	wxEventLoop loop;
+	wxEventLoopActivator activate(&loop);
+	std::exception_ptr failure;
+	agi::dispatch::Background().Async([&] {
+		try { task(&sink); }
+		catch (...) { failure = std::current_exception(); }
+		Main().Async([&] { loop.Exit(); });
+	});
+	loop.Run();
+	if (failure) std::rethrow_exception(failure);
+}
 
 namespace {
 	void set_taskbar_progress([[maybe_unused]] int progress) {

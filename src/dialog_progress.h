@@ -29,6 +29,10 @@ class wxGauge;
 class wxStaticText;
 class wxTextCtrl;
 
+/// Run with editing disabled and a busy cursor, without creating a dialog.
+/// GUI events are still dispatched while the worker runs.
+void RunBackgroundTaskWithoutDialog(std::function<void(agi::ProgressSink *)> task);
+
 /// @class DialogProgress
 /// @brief Progress-bar dialog box for displaying during long operations
 class DialogProgress final : public wxDialog, public agi::BackgroundRunner {

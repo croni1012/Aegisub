@@ -14,14 +14,12 @@
 #include <libaegisub/background_runner.h>
 #include <libaegisub/exception.h>
 #include <libaegisub/keyframe.h>
-#include <libaegisub/path.h>
 #include <libaegisub/scuisei.h>
 
 #include <algorithm>
 #include <chrono>
 #include <exception>
 #include <stdexcept>
-#include <wx/filename.h>
 #include <wx/msgdlg.h>
 
 bool GenerateKeyframesFromVideo(agi::Context *c) {
@@ -30,17 +28,17 @@ bool GenerateKeyframesFromVideo(agi::Context *c) {
     c->videoController->Stop();
     c->audioController->Stop();
 
-    agi::fs::path cache_file;
+    auto report_error = [&](std::string const& message) {
+        wxMessageBox(_("Could not generate keyframes: ") + to_wx(message),
+                     _("Load Keyframes from Video"), wxOK | wxICON_ERROR, c->parent);
+    };
     try {
         auto const count = provider->GetFrameCount();
-        auto const frame_message = from_wx(_("Analyzing video: %d / %d frames"));
+        auto const frame_message = _("Analyzing video: %d / %d frames");
         auto const refine_message = from_wx(_("Refining scene changes..."));
         std::vector<int> frames;
         std::exception_ptr failure;
-        DialogProgress dialog(c->parent, _("Load Keyframes from Video"), _("Analyzing scene changes..."));
-        // Run() calls ShowModal(): all other application windows stay disabled
-        // until the worker has finished, including after the user presses Cancel.
-        dialog.Run([&](agi::ProgressSink *ps) {
+        auto analyze = [&](agi::ProgressSink *ps) {
             try {
                 agi::scuisei::Detector detector;
                 auto last_update = std::chrono::steady_clock::now();
@@ -51,7 +49,7 @@ bool GenerateKeyframesFromVideo(agi::Context *c) {
                     detector.AddFrame(frame.data, frame.width, frame.height, frame.pitch, frame.flipped);
                     auto now = std::chrono::steady_clock::now();
                     if (n == 0 || n + 1 == count || now - last_update >= std::chrono::milliseconds(100)) {
-                        ps->SetMessage(agi::format(frame_message, n + 1, count));
+                        ps->SetMessage(from_wx(agi::wxformat(frame_message, n + 1, count)));
                         ps->SetProgress(n + 1, count + int64_t{1});
                         last_update = now;
                     }
@@ -68,34 +66,26 @@ bool GenerateKeyframesFromVideo(agi::Context *c) {
                 ps->SetProgress(1, 1);
             }
             catch (...) { failure = std::current_exception(); }
-        });
+        };
+        DialogProgress dialog(c->parent, _("Load Keyframes from Video"), _("Analyzing scene changes..."));
+        dialog.Run(analyze);
         if (failure) std::rethrow_exception(failure);
         if (frames.empty()) return false;
 
-        // Keep a persistent, unique list so saved ASS projects can reopen it.
+        // Replace the video's persistent list only after analysis succeeds.
         // Do not touch the current list until analysis AND saving have succeeded.
-        auto cache_dir = c->path->Decode("?user/scuisei-keyframes");
-        agi::fs::CreateDirectory(cache_dir);
-        auto filename = wxFileName::CreateTempFileName(to_wx((cache_dir / "scuisei-").string()));
-        if (filename.empty()) throw std::runtime_error("Could not create the generated keyframe file.");
-        cache_file = from_wx(filename);
+        auto cache_file = c->project->KeyframeCachePath();
+        if (cache_file.empty()) throw std::runtime_error("A video file is required to save scene keyframes.");
+        agi::fs::CreateDirectory(cache_file.parent_path());
         agi::keyframe::Save(cache_file, frames);
-        if (c->project->LoadKeyframes(cache_file)) {
-            cache_file.clear(); // This file is now part of the project's persistent state.
-            return true;
-        }
+        return c->project->LoadKeyframes(cache_file);
     }
     catch (agi::UserCancelException const&) { }
     catch (agi::Exception const& error) {
-        wxMessageBox(_("Could not generate keyframes: ") + to_wx(error.GetMessage()),
-                     _("Load Keyframes from Video"), wxOK | wxICON_ERROR, c->parent);
+        report_error(error.GetMessage());
     }
     catch (std::exception const& error) {
-        wxMessageBox(_("Could not generate keyframes: ") + to_wx(error.what()),
-                     _("Load Keyframes from Video"), wxOK | wxICON_ERROR, c->parent);
-    }
-    if (!cache_file.empty()) {
-        try { agi::fs::Remove(cache_file); } catch (...) { }
+        report_error(error.what());
     }
     return false;
 }

@@ -39,6 +39,31 @@ TEST(lagi_keyframe, save) {
 	EXPECT_TRUE(kf == res);
 }
 
+TEST(lagi_keyframe, cache_preserves_unicode_video_name_and_extension) {
+	auto root = agi::fs::path("data/keyframe/loaded-keyframes");
+	EXPECT_EQ(CacheFile(root, "media/árvíztűrő 01.mkv"), root / "árvíztűrő 01.mkv.keyframes.txt");
+	EXPECT_NE(CacheFile(root, "media/episode.mkv"), CacheFile(root, "media/episode.mp4"));
+}
+
+TEST(lagi_keyframe, dummy_cache_has_a_stable_portable_name) {
+	auto root = agi::fs::path("data/keyframe/loaded-keyframes");
+	auto first = CacheFile(root, "?dummy:25:100:1280:720:0:0:0:");
+	auto second = CacheFile(root, "?dummy:25:200:1280:720:0:0:0:");
+	EXPECT_EQ(first, CacheFile(root, "?dummy:25:100:1280:720:0:0:0:"));
+	EXPECT_NE(first, second);
+	EXPECT_EQ(first.filename().string().find_first_of("?:/\\*"), std::string::npos);
+}
+
+TEST(lagi_keyframe, video_cache_overwrites_and_reloads) {
+	auto root = agi::fs::path("data/keyframe/loaded-keyframes");
+	agi::fs::CreateDirectory(root);
+	auto path = CacheFile(root, "media/árvíztűrő 01.mkv");
+	Save(path, {0, 10, 20, 30});
+	EXPECT_EQ(Load(path), (std::vector<int>{0, 10, 20, 30}));
+	Save(path, {0, 15});
+	EXPECT_EQ(Load(path), (std::vector<int>{0, 15}));
+}
+
 TEST(lagi_keyframe, bad_files) {
 	EXPECT_THROW(Load(""), agi::fs::FileSystemError);
 	// TODO: use more clearly error type

@@ -12128,3 +12128,42 @@ msgstr "Kintsugi Fansub dokumentáció"
 #: ../src/command/help.cpp
 msgid "Open the Kintsugi Fansub Aegisub documentation"
 msgstr "A Kintsugi Fansub Aegisub-dokumentációjának megnyitása"
+
+#: ../src/libresrc/smart_timing.lua
+msgid "Align early starts to audio (100 ms lead-in)"
+msgstr "Korai kezdések igazítása a hanghoz (100 ms előtartás)"
+
+#: ../src/libresrc/smart_timing.lua
+msgid "Move starts right to sustained sound above the local background. Loud or uncertain audio is left unchanged. Preserves keyframes and overlapping speakers."
+msgstr "A kezdeteket jobbra tolja a helyi háttérből kiemelkedő tartós hanghoz. Erős vagy bizonytalan hangnál nem változtat. Megőrzi a kulcskockákat és az egymásra beszélőket."
+
+#: ../src/libresrc/smart_timing.lua
+msgid "Audio threshold (dBFS):"
+msgstr "Hangküszöb (dBFS):"
+
+#: ../src/libresrc/smart_timing.lua
+msgid "Minimum sound length (ms):"
+msgstr "Minimum hanghossz (ms):"
+
+#: ../src/libresrc/smart_timing.lua
+#, c-format
+msgid "Audio onset - %d/%d"
+msgstr "Hangkezdet - %d/%d"
+
+#: ../src/libresrc/smart_timing.lua
+#, c-format
+msgid "Starts aligned to audio: %d"
+msgstr "Hangkezdethez igazított sorok: %d"
+
+#: ../src/libresrc/smart_timing.lua
+msgid "Audio alignment skipped: no audio is loaded."
+msgstr "Hanghoz igazítás kihagyva: nincs betöltött hang."
+
+#: ../src/auto4_lua.cpp
+#, c-format
+msgid "Lines with corrected timing: %d"
+msgstr "%d sor időzítése javítva"
+
+#: ../src/auto4_lua.cpp
+msgid "Done"
+msgstr "Kész"

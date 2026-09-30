@@ -14,6 +14,7 @@
 
 #include "libaegisub/keyframe.h"
 
+#include <cstdint>
 #include <sstream>
 
 #include "libaegisub/io.h"
@@ -90,6 +91,18 @@ int wwxd(std::string const& line) {
 }
 
 namespace agi::keyframe {
+agi::fs::path CacheFile(agi::fs::path const& directory, agi::fs::path const& video) {
+	// Dummy videos have a parameter string rather than a filesystem filename.
+	// Keep their existing scene-detection support with a portable stable name.
+	auto identity = video.string();
+	if (identity.starts_with("?dummy")) {
+		uint64_t hash = 14695981039346656037ULL;
+		for (unsigned char byte : identity) hash = (hash ^ byte) * 1099511628211ULL;
+		return directory / ("dummy-" + std::to_string(hash) + ".keyframes.txt");
+	}
+	return directory / (video.filename().string() + ".keyframes.txt");
+}
+
 void Save(agi::fs::path const& filename, std::vector<int> const& keyframes) {
 	io::Save file(filename);
 	std::ostream& of = file.Get();

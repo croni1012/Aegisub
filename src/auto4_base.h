@@ -98,6 +98,8 @@ namespace Automation4 {
 
 	class BackgroundScriptRunner {
 		std::unique_ptr<DialogProgress> impl;
+		wxWindow *parent;
+		std::string title;
 
 	public:
 		wxWindow *GetParentWindow() const;
@@ -105,7 +107,7 @@ namespace Automation4 {
 
 		void Run(std::function<void(ProgressSink*)> task);
 
-		BackgroundScriptRunner(wxWindow *parent, std::string const& title);
+		BackgroundScriptRunner(wxWindow *parent, std::string const& title, bool show_progress = true);
 		~BackgroundScriptRunner();
 	};
 

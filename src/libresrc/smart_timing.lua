@@ -1,25 +1,29 @@
 script_name = "Dynamo scripts/Okos időzítés"
 script_description = "Konzervatív KF-igazítás és folytonos dialógushatárok."
 script_author = "Dynamo"
-script_version = "2.1.4"
+script_version = "2.2.1-kintsugi.6"
 script_namespace = "Dynamo.SmartTiming"
 
 -- Az algoritmus mindig egy változatlan alap-időzítésből számol.
 -- A saját extradata-jelölője miatt újraindítás után sem halmozódnak a módosítások.
 
 local EXTRA_KEY = "dynamo.smart_timing"
+local tr = aegisub.gettext or function(text) return text end
+local AUDIO_LEAD_MS = 100
 local ASS_ROUNDTRIP_TOLERANCE_MS = 9
 -- Csak a már KF-en végződő előző sorhoz történő kapcsolás külön kerete.
 -- Nem lazítja a szabad kezdések vagy más közös határok snap-korlátait.
 local KEYFRAME_END_JOIN_FRAMES = 6
+-- A végnyújtás növelése ne tágítsa vele együtt a korábbi vágás védőablakát.
+local CROSSED_KEYFRAME_GUARD_MS = 100
 
 local DEFAULTS = {
-    link_gap_ms = 600,
+    link_gap_ms = 800,
     link_bias_percent = 80,
     start_snap_back_frames = 3,
     start_snap_max_ms = 50,
     end_snap_back_frames = 3,
-    end_forward_max_ms = 100,
+    end_forward_max_ms = 750,
     overlap_fix_frames = 3,
     link_snap_frames = 3,
     link_keyframe_gaps = true,
@@ -27,10 +31,10 @@ local DEFAULTS = {
     max_cps = 25,
     only_bottom_dialogue = true,
     skip_complex = true,
-    show_summary = true
+    audio_align = true,
+    audio_threshold_db = -40,
+    audio_min_ms = 40
 }
-
-local last_settings = nil
 
 local function copy_table(source)
     local result = {}
@@ -68,13 +72,15 @@ local function normalize_settings(settings)
     settings.only_bottom_dialogue = not not settings.only_bottom_dialogue
     settings.skip_complex = not not settings.skip_complex
     settings.link_keyframe_gaps = not not settings.link_keyframe_gaps
-    settings.show_summary = not not settings.show_summary
+    settings.audio_align = not not settings.audio_align
+    settings.audio_threshold_db = clamp(round(tonumber(settings.audio_threshold_db) or DEFAULTS.audio_threshold_db), -80, -10)
+    settings.audio_min_ms = clamp(round(tonumber(settings.audio_min_ms) or DEFAULTS.audio_min_ms), 10, 500)
     return settings
 end
 
 local function settings_signature(settings)
     return table.concat({
-        "v2.1.4",
+        "v" .. script_version,
         settings.link_gap_ms,
         settings.link_bias_percent,
         settings.start_snap_back_frames,
@@ -87,7 +93,10 @@ local function settings_signature(settings)
         settings.min_duration_ms,
         settings.max_cps,
         settings.only_bottom_dialogue and 1 or 0,
-        settings.skip_complex and 1 or 0
+        settings.skip_complex and 1 or 0,
+        settings.audio_align and 1 or 0,
+        settings.audio_threshold_db,
+        settings.audio_min_ms
     }, ",")
 end
 
@@ -98,124 +107,6 @@ local function keyframe_signature(keyframes)
         hash = (hash * 65599 + frame * 31 + time + index) % 2147483647
     end
     return string.format("kf:%d:%d", #keyframes, hash)
-end
-
-local function show_message(message)
-    aegisub.dialog.display({
-        {class = "label", label = message, x = 0, y = 0, width = 1, height = 1}
-    }, {"Rendben"})
-end
-
-local function settings_dialog()
-    local settings = copy_table(last_settings or DEFAULTS)
-
-    while true do
-        local controls = {
-            {class = "label", label = "Folytonosság", x = 0, y = 0, width = 3, height = 1},
-            {class = "label", label = "Összeköthető max. rés:", x = 0, y = 1, width = 2, height = 1},
-            {
-                class = "intedit", name = "link_gap_ms", value = settings.link_gap_ms,
-                min = 0, max = 2000, x = 2, y = 1, width = 1, height = 1,
-                hint = "Az ennél közelebbi két, azonos sávban lévő dialógust közös határra teszi. Jelenetváltáson nem köt át vakon."
-            },
-            {class = "label", label = "ms", x = 3, y = 1, width = 1, height = 1},
-            {class = "label", label = "Résből az előző sor kap:", x = 0, y = 2, width = 2, height = 1},
-            {
-                class = "intedit", name = "link_bias_percent", value = settings.link_bias_percent,
-                min = 0, max = 100, x = 2, y = 2, width = 1, height = 1,
-                hint = "80%-nál a rés 80%-át az előző sor kapja, 20%-ával a következő kezdődik korábban."
-            },
-            {class = "label", label = "%", x = 3, y = 2, width = 1, height = 1},
-            {class = "label", label = "Javítható átfedés:", x = 0, y = 3, width = 2, height = 1},
-            {
-                class = "intedit", name = "overlap_fix_frames", value = settings.overlap_fix_frames,
-                min = 0, max = 30, x = 2, y = 3, width = 1, height = 1
-            },
-            {class = "label", label = "frame", x = 3, y = 3, width = 1, height = 1},
-            {
-                class = "checkbox", name = "link_keyframe_gaps", value = settings.link_keyframe_gaps,
-                label = "KF-et tartalmazó közeli rés közös határa a KF legyen",
-                x = 0, y = 4, width = 4, height = 1,
-                hint = "A résben levő vágásra közösít. Ha az előző sor már KF-en végződik, a következő legfeljebb 6 frame-ről kapcsolódhat hozzá; erre nem a szabad kezdések 50 ms-os kerete érvényes."
-            },
-
-            {class = "label", label = "Kulcskockák", x = 4, y = 0, width = 2, height = 1},
-            {class = "label", label = "Kezdet visszanyújtása:", x = 4, y = 1, width = 2, height = 1},
-            {
-                class = "intedit", name = "start_snap_back_frames", value = settings.start_snap_back_frames,
-                min = 0, max = 30, x = 6, y = 1, width = 1, height = 1,
-                hint = "Csak korábbi KF-re igazít; az eredeti beszédkezdet utánra soha nem vág."
-            },
-            {class = "label", label = "Kezdet max. koraisága (ms):", x = 4, y = 2, width = 2, height = 1},
-            {
-                class = "intedit", name = "start_snap_max_ms", value = settings.start_snap_max_ms,
-                min = 0, max = 1000, x = 6, y = 2, width = 1, height = 1,
-                hint = "A szabad kezdések KF-igazításának ms-korlátja. A már KF-en végződő előző sorhoz kapcsolódás külön, 6 frame-es keretet használ."
-            },
-            {class = "label", label = "Vég bleed visszavágása:", x = 4, y = 3, width = 2, height = 1},
-            {
-                class = "intedit", name = "end_snap_back_frames", value = settings.end_snap_back_frames,
-                min = 0, max = 30, x = 6, y = 3, width = 1, height = 1,
-                hint = "A KF után ennyi ténylegesen látható frame-ig vág vissza. A 4. frame-et már nem."
-            },
-            {class = "label", label = "Közös határ KF-közelsége:", x = 4, y = 4, width = 2, height = 1},
-            {
-                class = "intedit", name = "link_snap_frames", value = settings.link_snap_frames,
-                min = 0, max = 30, x = 6, y = 4, width = 1, height = 1,
-                hint = "Az érintkező sorok közös határa ennyi frame-en belül KF-re kerülhet. Előrefelé a végnyújtás ms-korlátja is érvényes; 0-val kikapcsolható."
-            },
-            {class = "label", label = "Vég következő KF-ig max (ms):", x = 4, y = 5, width = 2, height = 1},
-            {
-                class = "intedit", name = "end_forward_max_ms", value = settings.end_forward_max_ms,
-                min = 0, max = 2000, x = 6, y = 5, width = 1, height = 1,
-                hint = "Csak a tényleges következő KF-ig nyújt, legfeljebb ennyit. Érintkező soroknál a következő kezdetét is együtt mozgatja; 0-val kikapcsolható."
-            },
-
-            {class = "label", label = "Biztonság", x = 0, y = 7, width = 3, height = 1},
-            {class = "label", label = "Minimum időtartam:", x = 0, y = 8, width = 2, height = 1},
-            {
-                class = "intedit", name = "min_duration_ms", value = settings.min_duration_ms,
-                min = 100, max = 10000, x = 2, y = 8, width = 1, height = 1
-            },
-            {class = "label", label = "ms", x = 3, y = 8, width = 1, height = 1},
-            {class = "label", label = "Max. CPS (0 = ki):", x = 4, y = 8, width = 2, height = 1},
-            {
-                class = "intedit", name = "max_cps", value = settings.max_cps,
-                min = 0, max = 100, x = 6, y = 8, width = 1, height = 1
-            },
-            {
-                class = "checkbox", name = "only_bottom_dialogue", value = settings.only_bottom_dialogue,
-                label = "Csak alsó dialógus (\\an2 / 2-es style alignment)",
-                x = 0, y = 10, width = 4, height = 1,
-                hint = "Az \\an7-es táblák és a többi feliratpozíció érintetlen marad."
-            },
-            {
-                class = "checkbox", name = "skip_complex", value = settings.skip_complex,
-                label = "Karaoke/rajz/pozicionált/animált sorok kihagyása",
-                x = 0, y = 11, width = 4, height = 1
-            },
-            {
-                class = "checkbox", name = "show_summary", value = settings.show_summary,
-                label = "Összegzés megjelenítése", x = 4, y = 10, width = 3, height = 1
-            }
-        }
-
-        local button, result = aegisub.dialog.display(
-            controls,
-            {"Alkalmaz", "Alapértékek", "Mégse"},
-            {ok = "Alkalmaz", cancel = "Mégse"}
-        )
-
-        if button == false or button == "Mégse" then
-            aegisub.cancel()
-        elseif button == "Alapértékek" then
-            settings = copy_table(DEFAULTS)
-        else
-            settings = normalize_settings(result)
-            last_settings = copy_table(settings)
-            return settings
-        end
-    end
 end
 
 local function lower_bound(sorted_values, value)
@@ -378,10 +269,23 @@ local function required_duration(entry, settings)
     return math.min(requested, math.max(1, entry.original_end - entry.original_start))
 end
 
-local function safe_boundary(previous, following, boundary, settings)
+local function preserves_speaker_end(entry, end_time, synchronized)
+    if entry.speaker_overlap_end == nil or end_time >= entry.speaker_overlap_end then return true end
+    if synchronized == nil then return false end
+    for _, other in ipairs(entry.speaker_overlaps or {}) do
+        if not synchronized[other] and
+           end_time < math.min(entry.context_original_end, other.context_original_end) then return false end
+    end
+    return true
+end
+
+local function safe_boundary(previous, following, boundary, settings, synchronized)
     if boundary <= previous.start_time or boundary >= following.end_time then return false end
     if boundary - previous.start_time < required_duration(previous, settings) then return false end
     if following.end_time - boundary < required_duration(following, settings) then return false end
+    local saved_boundary = canonical_ass_time(boundary)
+    if not preserves_speaker_end(previous, saved_boundary, synchronized) then return false end
+    if following.speaker_overlap_start and saved_boundary > following.speaker_overlap_start then return false end
     return true
 end
 
@@ -407,19 +311,22 @@ end
 local function record_identity(record)
     if record == nil then return "-" end
     return string.format(
-        "%d:%d:%d:%d:%d:%d",
+        "%d:%d:%d:%d:%d:%d:%d:%d",
         stable_hash(record.line.text),
         stable_hash(record.line.style),
         tonumber(record.line.layer) or 0,
         tonumber(record.alignment) or 2,
         tonumber(record.context_original_start) or 0,
-        tonumber(record.context_original_end) or 0
+        tonumber(record.context_original_end) or 0,
+        stable_hash(record.actor),
+        record.speech_lane or 1
     )
 end
 
 local function record_context_signature(record, current_signature)
     return table.concat({
         current_signature,
+        record.speaker_context,
         record_identity(record.previous_speech),
         record_identity(record),
         record_identity(record.next_speech)
@@ -435,6 +342,71 @@ local function build_style_alignments(subtitles)
         end
     end
     return styles
+end
+
+local function assign_speech_lanes(speech)
+    local groups = {}
+    for position, record in ipairs(speech) do
+        local group_key = tostring(record.line.layer or 0) .. ":" .. tostring(record.alignment)
+        local group = groups[group_key]
+        if group == nil then
+            group = {active = {}, lanes = {}, records = {}, signature = 0}
+            groups[group_key] = group
+        end
+
+        -- A marker eredeti idejeivel a kijelöléstől és az előző igazítástól
+        -- függetlenül ugyanazokat a párhuzamos beszédsávokat építjük fel.
+        local active, blocked, lane = {}, {}, nil
+        for _, other in ipairs(group.active) do
+            if other.context_original_end > record.context_original_start then
+                active[#active + 1] = other
+                local first = math.max(record.context_original_start, other.context_original_start)
+                local last = math.min(record.context_original_end, other.context_original_end)
+                if first < last and record.actor ~= "" and other.actor ~= "" then
+                    if record.actor == other.actor then
+                        -- Egy szereplő kis időzítési átfedése továbbra is javítható.
+                        lane = lane or other.speech_lane
+                    else
+                        blocked[other.speech_lane] = true
+                        -- A szándékos átfedés teljes eredeti szakaszát megőrizzük:
+                        -- közös határ vagy KF-igazítás sem vághatja le.
+                        record.speaker_overlap_start = math.min(record.speaker_overlap_start or first, first)
+                        record.speaker_overlap_end = math.max(record.speaker_overlap_end or last, last)
+                        other.speaker_overlap_start = math.min(other.speaker_overlap_start or first, first)
+                        other.speaker_overlap_end = math.max(other.speaker_overlap_end or last, last)
+                        record.speaker_overlaps = record.speaker_overlaps or {}
+                        other.speaker_overlaps = other.speaker_overlaps or {}
+                        record.speaker_overlaps[#record.speaker_overlaps + 1] = other
+                        other.speaker_overlaps[#other.speaker_overlaps + 1] = record
+                    end
+                end
+            end
+        end
+
+        -- Az első felszabaduló sávot bármelyik következő szereplő használhatja.
+        -- Üres névből nem következtetünk külön beszélőre: marad a hagyományos javítás.
+        if lane == nil then
+            lane = 1
+            while blocked[lane] do lane = lane + 1 end
+        end
+        record.speech_lane = lane
+        record.speech_position = position
+        record.previous_speech = group.lanes[lane]
+        if record.previous_speech then record.previous_speech.next_speech = record end
+        group.lanes[lane] = record
+        active[#active + 1] = record
+        group.active = active
+        group.records[#group.records + 1] = record
+        group.signature = stable_hash(tostring(group.signature) .. ":" .. record_identity(record))
+    end
+
+    -- A többi sáv szereplői is befolyásolják a besorolást és az átfedésvédelmet.
+    -- Átnevezés vagy módosított szomszéd esetén a mentett eredményt újraszámoljuk.
+    for _, group in pairs(groups) do
+        for _, record in ipairs(group.records) do
+            record.speaker_context = tostring(group.signature)
+        end
+    end
 end
 
 local function collect_speech(subtitles, selected_lines, settings, current_signature)
@@ -464,6 +436,7 @@ local function collect_speech(subtitles, selected_lines, settings, current_signa
                     selected = record_selected,
                     modifiable = accepted_complexity,
                     alignment = alignment,
+                    actor = tostring(line.actor or ""):match("^%s*(.-)%s*$"),
                     original_start = original_start,
                     original_end = original_end,
                     start_time = initial_start,
@@ -497,16 +470,16 @@ local function collect_speech(subtitles, selected_lines, settings, current_signa
     end
 
     table.sort(speech, function(left, right)
-        if left.original_start ~= right.original_start then return left.original_start < right.original_start end
-        if left.original_end ~= right.original_end then return left.original_end < right.original_end end
+        if left.context_original_start ~= right.context_original_start then
+            return left.context_original_start < right.context_original_start
+        end
+        if left.context_original_end ~= right.context_original_end then
+            return left.context_original_end < right.context_original_end
+        end
         return left.index < right.index
     end)
 
-    for position, record in ipairs(speech) do
-        record.speech_position = position
-        record.previous_speech = speech[position - 1]
-        record.next_speech = speech[position + 1]
-    end
+    assign_speech_lanes(speech)
 
     for _, record in ipairs(speech) do
         record.context_signature = record_context_signature(record, current_signature)
@@ -549,7 +522,7 @@ local function collect_speech(subtitles, selected_lines, settings, current_signa
         return left.speech_position < right.speech_position
     end)
 
-    return entries, skipped
+    return entries, skipped, speech
 end
 
 local function find_start_keyframe(entry, settings, keyframes)
@@ -602,7 +575,7 @@ local function find_crossed_keyframe(entry, settings, keyframes)
     if settings.end_forward_max_ms <= 0 then return nil end
     local _, time = nearest_keyframe_in_range(
         keyframes,
-        math.max(0, entry.original_end - settings.end_forward_max_ms),
+        math.max(0, entry.original_end - math.min(settings.end_forward_max_ms, CROSSED_KEYFRAME_GUARD_MS)),
         entry.original_end,
         entry.original_end
     )
@@ -611,14 +584,19 @@ end
 
 local function find_forward_end_keyframe(entry, settings, keyframes)
     if settings.end_forward_max_ms <= 0 then return nil end
-    local _, time = nearest_keyframe_in_range(
+    local boundary_frame = aegisub.frame_from_ms(entry.original_end)
+    if boundary_frame == nil or keyframes[lower_bound(keyframes, boundary_frame)] == boundary_frame then return nil end
+    local frame, time = nearest_keyframe_in_range(
         keyframes,
         entry.original_end,
         entry.original_end + settings.end_forward_max_ms,
         entry.original_end
     )
-    if time == entry.original_end then return nil end
-    return time
+    if frame == nil then return nil end
+    local saved_time = canonical_ass_time(time)
+    if saved_time <= entry.original_end or saved_time - entry.original_end > settings.end_forward_max_ms or
+       aegisub.frame_from_ms(saved_time) ~= frame then return nil end
+    return saved_time
 end
 
 local function keyframe_between(keyframes, first_ms, last_ms, target_ms)
@@ -649,9 +627,9 @@ local function shared_back_keyframe(previous, following, settings, keyframes)
     return time
 end
 
-local function shared_forward_keyframe(previous, settings, keyframes)
+local function shared_forward_keyframe(previous, following, settings, keyframes)
     if settings.link_snap_frames <= 0 or settings.end_forward_max_ms <= 0 then return nil end
-    local boundary = previous.original_end
+    local boundary = previous.end_time
     local boundary_frame = aegisub.frame_from_ms(boundary)
     if boundary_frame == nil then return nil end
 
@@ -659,15 +637,18 @@ local function shared_forward_keyframe(previous, settings, keyframes)
     -- korábbi, mint ms_from_frame(KF). Ilyenkor nem keresünk újabb vágást.
     if keyframes[lower_bound(keyframes, boundary_frame)] == boundary_frame then return nil end
     local frame, time = nearest_keyframe_in_range(
-        keyframes, boundary + 1, boundary + settings.end_forward_max_ms, boundary
+        keyframes, boundary + 1, previous.original_end + settings.end_forward_max_ms, boundary
     )
     if frame == nil then return nil end
-    local early_frames = frame - boundary_frame
-    if early_frames < 1 or early_frames > settings.link_snap_frames then return nil end
+    local following_frame = aegisub.frame_from_ms(following.original_start)
+    -- A rés kitöltése nem beszédlevágás. Az eredeti következő kezdéshez mérjük
+    -- a késést, nem a rés 80%-ánál frissen létrehozott közös határhoz.
+    if frame <= boundary_frame or following_frame == nil or
+       frame - following_frame > settings.link_snap_frames then return nil end
 
     -- A ténylegesen mentett, centiszekundumos határral vizsgáljuk a védelmeket.
     local saved_time = canonical_ass_time(time)
-    if saved_time <= boundary or saved_time - boundary > settings.end_forward_max_ms or
+    if saved_time <= boundary or saved_time - previous.original_end > settings.end_forward_max_ms or
        aegisub.frame_from_ms(saved_time) ~= frame then return nil end
     return saved_time
 end
@@ -812,24 +793,137 @@ local function link_pairs(entries, settings, keyframes, stats)
         end
     end
 
-    -- Csak az eddig változatlanul megőrzött, eleve érintkező határok kiegészítése.
-    -- A régi visszavágási/rés-/átfedési döntések elsőbbséget élveznek. E második
+    -- Az eleve érintkező ÉS a most réskitöltéssel összekötött határok ellenőrzése.
+    -- A visszavágási/átfedési döntések és a már KF-en levő határok maradnak. E második
     -- körben a következő sor már a saját páros döntése utáni végével szerepel,
     -- így két szomszédos igazítás együtt sem kerüli meg a minimum/CPS-védelmet.
     for _, previous in ipairs(entries) do
         local following = previous.next_speech
         if following ~= nil and following.selected and same_spatial_lane(previous, following) and
-           previous.original_end == following.original_start and
+           previous.original_end <= following.original_start and
            previous.linked_next and following.linked_previous and
-           previous.end_time == previous.original_end and
-           following.start_time == following.original_start then
-            local boundary = shared_forward_keyframe(previous, settings, keyframes)
+           previous.end_time >= previous.original_end and
+           following.start_time == previous.end_time then
+            local boundary = shared_forward_keyframe(previous, following, settings, keyframes)
             if boundary ~= nil and safe_boundary(previous, following, boundary, settings) then
                 previous.end_time = boundary
                 following.start_time = boundary
-                stats.shared_preserved = stats.shared_preserved - 1
+                if previous.original_end == following.original_start then
+                    stats.shared_preserved = stats.shared_preserved - 1
+                else
+                    stats.continuity_linked = stats.continuity_linked - 1
+                end
                 stats.shared_keyframe = stats.shared_keyframe + 1
             end
+        end
+    end
+end
+
+local function synchronize_speaker_ends(entries, settings, keyframes, stats)
+    if settings.link_gap_ms <= 0 then return end
+    local ordered, assigned = {}, {}
+    for _, entry in ipairs(entries) do
+        if entry.actor ~= "" and entry.speaker_overlaps and not entry.protected_overlap then
+            ordered[#ordered + 1] = entry
+        end
+    end
+    table.sort(ordered, function(left, right)
+        if left.original_end ~= right.original_end then return left.original_end < right.original_end end
+        return left.speech_position < right.speech_position
+    end)
+
+    local function synchronize(group)
+        local members, boundary = {}, 0
+        for _, entry in ipairs(group) do
+            members[entry] = true
+            boundary = math.max(boundary, entry.end_time)
+        end
+
+        local function valid(target, keyframe)
+            for _, entry in ipairs(group) do
+                if math.abs(target - entry.original_end) > settings.link_gap_ms or
+                   target - entry.start_time < required_duration(entry, settings) or
+                   not preserves_speaker_end(entry, target, members) then return false end
+                if entry.edge_lock_end and target ~= entry.end_time then return false end
+                local original_frame = original_end_on_keyframe(entry, keyframes)
+                if original_frame and aegisub.frame_from_ms(target) ~= original_frame then return false end
+                local end_frame = aegisub.frame_from_ms(entry.original_end)
+                local target_frame = aegisub.frame_from_ms(target)
+                if end_frame == nil or target_frame == nil then return false end
+                local next_cut = keyframes[lower_bound(keyframes, end_frame + 1)]
+                -- A közös vég keresése sem ugorhat át egy korábbi jelenetváltást.
+                if next_cut and next_cut < target_frame then return false end
+                if target < entry.end_time then
+                    -- Közös visszavágás csak valódi, közeli KF-re történhet.
+                    local bleed = keyframe and end_bleed_frames(entry.original_end, keyframe) or -1
+                    if bleed < 0 or bleed > settings.end_snap_back_frames then return false end
+                end
+                local following = entry.next_speech
+                if entry.linked_next then
+                    if following == nil or not following.selected or following.edge_lock_start or
+                       not safe_boundary(entry, following, target, settings, members) then return false end
+                elseif following and target > following.start_time then
+                    return false
+                end
+            end
+            return true
+        end
+
+        local target
+        local boundary_frame = aegisub.frame_from_ms(boundary)
+        if boundary_frame and keyframes[lower_bound(keyframes, boundary_frame)] == boundary_frame and
+           valid(boundary, boundary_frame) then
+            target = boundary
+        end
+        if target == nil then
+            local back = find_back_end_keyframe({original_end = boundary}, settings, keyframes)
+            if back then
+                local saved = canonical_ass_time(back)
+                local frame = aegisub.frame_from_ms(back)
+                if aegisub.frame_from_ms(saved) == frame and valid(saved, frame) then target = saved end
+            end
+        end
+        if target == nil then
+            local crossed = find_crossed_keyframe({original_end = boundary}, settings, keyframes)
+            if crossed == nil or crossed >= boundary then
+                local forward = find_forward_end_keyframe({original_end = boundary}, settings, keyframes)
+                if forward then
+                    local within_forward_limit = true
+                    for _, entry in ipairs(group) do
+                        if forward - entry.original_end > settings.end_forward_max_ms then within_forward_limit = false end
+                    end
+                    if within_forward_limit and valid(forward, aegisub.frame_from_ms(forward)) then target = forward end
+                end
+            end
+        end
+        if target == nil and valid(boundary, nil) then target = boundary end
+        if target == nil then return false end
+
+        for _, entry in ipairs(group) do
+            entry.end_time = target
+            entry.synchronized_end = true
+            assigned[entry] = true
+            if entry.linked_next then entry.next_speech.start_time = target end
+        end
+        stats.speaker_ends_synced = stats.speaker_ends_synced + 1
+        return true
+    end
+
+    for index, first in ipairs(ordered) do
+        if not assigned[first] then
+            local group, actors = {first}, {[first.actor] = true}
+            for other_index = index + 1, #ordered do
+                local other = ordered[other_index]
+                -- A teljes csoport végideje férjen a keretbe, ne csak páronként
+                -- láncolódjanak össze egyre távolabbi sorok.
+                if other.original_end - first.original_end > settings.link_gap_ms then break end
+                if not assigned[other] and not actors[other.actor] and same_spatial_lane(first, other) and
+                   other.original_start < first.original_end then
+                    group[#group + 1] = other
+                    actors[other.actor] = true
+                end
+            end
+            if #group > 1 then synchronize(group) end
         end
     end
 end
@@ -851,10 +945,11 @@ local function adjust_individual_entries(entries, settings, keyframes, stats)
             end
         end
 
-        if not entry.linked_next and not entry.protected_overlap and not entry.edge_lock_end and
-           not entry.protected_keyframe_end then
+        if not entry.linked_next and not entry.protected_overlap and not entry.edge_lock_end and not entry.synchronized_end and
+           not entry.protected_keyframe_end and original_end_on_keyframe(entry, keyframes) == nil then
             local back_keyframe = find_back_end_keyframe(entry, settings, keyframes)
             if back_keyframe ~= nil and
+               (entry.speaker_overlap_end == nil or canonical_ass_time(back_keyframe) >= entry.speaker_overlap_end) and
                back_keyframe - entry.start_time >= required_duration(entry, settings) then
                 entry.end_time = back_keyframe
                 stats.end_keyframe_back = stats.end_keyframe_back + 1
@@ -879,55 +974,104 @@ local function adjust_individual_entries(entries, settings, keyframes, stats)
     end
 end
 
-local function format_summary(stats, skipped)
-    return string.format(
-        "Feldolgozott beszédsorok: %d\n\n" ..
-        "Megőrzött pontos közös határ: %d\n" ..
-        "Folytonossá tett határ: %d\n" ..
-        "Kis átfedés javítva: %d\n" ..
-        "Közös határ KF-re téve: %d\n" ..
-        "KF-en végződő sor utáni szünet megőrizve: %d\n" ..
-        "Kezdet korábbi KF-re téve: %d\n" ..
-        "Vég 1–3 frame bleedből KF-re vágva: %d\n" ..
-        "Vég következő közeli KF-ig nyújtva: %d\n" ..
-        "4+ frame-es KF-átlógás védve: %d\n" ..
-        "Nagy/szándékos átfedés védve: %d\n" ..
-        "Ténylegesen módosult sorok: %d\n\n" ..
-        "Kihagyva — komment: %d, nem dialógus: %d, nem alsó (pl. \\an7): %d, komplex/animált: %d",
-        stats.processed,
-        stats.shared_preserved,
-        stats.continuity_linked,
-        stats.overlap_fixed,
-        stats.shared_keyframe,
-        stats.keyframe_gap_preserved,
-        stats.start_keyframe,
-        stats.end_keyframe_back,
-        stats.end_keyframe_forward,
-        stats.end_crossed_guard,
-        stats.overlap_protected,
-        stats.modified,
-        skipped.comments, skipped.non_dialogue, skipped.alignment, skipped.complex
-    )
+local function align_starts_to_audio(speech, settings, keyframes, stats)
+    if not settings.audio_align or not stats.audio_available then return end
+    local ordered, ending_at = {}, {}
+    for _, entry in ipairs(speech) do
+        ordered[#ordered + 1] = entry
+        entry.before_audio_start = canonical_ass_time(entry.start_time)
+        entry.before_audio_end = canonical_ass_time(entry.end_time)
+        local endings = ending_at[entry.before_audio_end] or {}
+        endings[#endings + 1] = entry
+        ending_at[entry.before_audio_end] = endings
+    end
+    table.sort(ordered, function(left, right)
+        if left.before_audio_start ~= right.before_audio_start then return left.before_audio_start < right.before_audio_start end
+        return left.speech_position < right.speech_position
+    end)
+
+    local active_end = -1
+    for position, entry in ipairs(ordered) do
+        local first_in_overlap = entry.before_audio_start >= active_end
+        active_end = math.max(active_end, entry.before_audio_end)
+        if aegisub.progress.is_cancelled() then aegisub.cancel() end
+        aegisub.progress.title(string.format(tr("Audio onset - %d/%d"), position, #ordered))
+        aegisub.progress.set(position * 100 / #ordered)
+
+        local start = entry.before_audio_start
+        local start_frame = aegisub.frame_from_ms(start)
+        local on_keyframe = start_frame and keyframes[lower_bound(keyframes, start_frame)] == start_frame
+        if entry.selected and first_in_overlap and not entry.edge_lock_start and not on_keyframe then
+            local continuous, movable = {}, true
+            -- A korábban közös végre igazított átfedő sorok együtt maradnak.
+            for _, previous in ipairs(ending_at[start] or {}) do
+                if same_spatial_lane(previous, entry) then
+                    continuous[#continuous + 1] = previous
+                    local end_frame = aegisub.frame_from_ms(previous.before_audio_end)
+                    local end_on_keyframe = end_frame and keyframes[lower_bound(keyframes, end_frame)] == end_frame
+                    if not previous.selected or previous.edge_lock_end or end_on_keyframe then movable = false end
+                end
+            end
+            if movable then
+                local next_entry = ordered[position + 1]
+                local next_start = next_entry and next_entry.before_audio_start or entry.before_audio_end
+                local latest_onset = entry.before_audio_end - required_duration(entry, settings) + AUDIO_LEAD_MS
+                local search_end = math.min(entry.before_audio_end, next_start, latest_onset + settings.audio_min_ms)
+                if search_end > start then
+                    local onset = aegisub._audio_onset(start, search_end, settings.audio_threshold_db, settings.audio_min_ms)
+                    if aegisub.progress.is_cancelled() then aegisub.cancel() end
+                    if onset ~= nil then
+                        local target = canonical_ass_time(onset - AUDIO_LEAD_MS)
+                        local target_frame = aegisub.frame_from_ms(target)
+                        local onset_frame = aegisub.frame_from_ms(onset)
+                        local last_cut = onset_frame and keyframes[lower_bound(keyframes, onset_frame + 1) - 1]
+                        local allowed = target > start and target < next_start and
+                            entry.before_audio_end - target >= required_duration(entry, settings) and
+                            target_frame ~= nil and (last_cut == nil or target_frame >= last_cut) and
+                            (entry.speaker_overlap_start == nil or target <= entry.speaker_overlap_start)
+                        if #continuous > 0 and allowed then
+                            local next_cut = start_frame and keyframes[lower_bound(keyframes, start_frame + 1)]
+                            allowed = next_cut == nil or next_cut >= target_frame
+                            for _, previous in ipairs(continuous) do
+                                allowed = allowed and safe_boundary(previous, entry, target, settings)
+                            end
+                        end
+                        if allowed then
+                            entry.start_time = target
+                            for _, previous in ipairs(continuous) do previous.end_time = target end
+                            stats.audio_starts = stats.audio_starts + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
-local function process(subtitles, selected_lines, active_line)
-    local settings = settings_dialog()
+local function show_result(modified)
+    aegisub._timing_result(modified)
+end
+
+local function process(subtitles, selected_lines, active_line, overrides)
+    -- The menu invokes this with three arguments and always uses fresh defaults.
+    local settings = copy_table(DEFAULTS)
+    for key, value in pairs(overrides or {}) do settings[key] = value end
+    settings = normalize_settings(settings)
     local keyframes = aegisub.keyframes() or {}
 
     if #keyframes == 0 or aegisub.frame_from_ms(0) == nil then
-        show_message(
-            "Nincs használható videó-/kulcskockaadat.\n\n" ..
-            "Tölts be videót és jelenetváltási kulcskockalistát, majd futtasd újra a makrót."
-        )
-        aegisub.cancel()
+        return selected_lines, active_line
     end
+    aegisub.progress.set(0)
     table.sort(keyframes, function(left, right) return left < right end)
-    local current_signature = settings_signature(settings) .. "," .. keyframe_signature(keyframes)
+    local audio_identity = settings.audio_align and aegisub._audio_timing_info and aegisub._audio_timing_info()
+    local current_signature = settings_signature(settings) .. "," .. keyframe_signature(keyframes) ..
+        ",audio:" .. stable_hash(audio_identity or "none")
 
-    local entries, skipped = collect_speech(subtitles, selected_lines, settings, current_signature)
+    local entries, _, speech = collect_speech(subtitles, selected_lines, settings, current_signature)
     if #entries == 0 then
-        show_message("A kijelölésben nincs feldolgozható alsó dialógussor.")
-        aegisub.cancel()
+        show_result(0)
+        return selected_lines, active_line
     end
 
     local stats = {
@@ -936,19 +1080,25 @@ local function process(subtitles, selected_lines, active_line)
         continuity_linked = 0,
         overlap_fixed = 0,
         shared_keyframe = 0,
+        speaker_ends_synced = 0,
         keyframe_gap_preserved = 0,
         start_keyframe = 0,
         end_keyframe_back = 0,
         end_keyframe_forward = 0,
         end_crossed_guard = 0,
+        audio_available = audio_identity ~= nil and audio_identity ~= false and aegisub._audio_onset ~= nil,
+        audio_starts = 0,
         overlap_protected = 0,
         modified = 0
     }
 
     -- Minden páros döntés a változatlan eredeti időkből készül.
     link_pairs(entries, settings, keyframes, stats)
+    synchronize_speaker_ends(entries, settings, keyframes, stats)
     adjust_individual_entries(entries, settings, keyframes, stats)
+    align_starts_to_audio(speech, settings, keyframes, stats)
 
+    if aegisub.progress.is_cancelled() then aegisub.cancel() end
     for position, entry in ipairs(entries) do
         aegisub.progress.set(position * 100 / #entries)
         local new_start = canonical_ass_time(entry.start_time)
@@ -982,9 +1132,7 @@ local function process(subtitles, selected_lines, active_line)
     end
 
     aegisub.set_undo_point(script_name)
-    local summary = format_summary(stats, skipped)
-    aegisub.log("\n" .. script_name .. "\n" .. summary .. "\n")
-    if settings.show_summary then show_message(summary) end
+    show_result(stats.modified)
     return selected_lines, active_line
 end
 

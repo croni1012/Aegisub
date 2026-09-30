@@ -102,7 +102,6 @@ struct Writer {
 		WriteIfNotEmpty("Audio File: ", properties.audio_file);
 		WriteIfNotEmpty("Video File: ", properties.video_file);
 		WriteIfNotEmpty("Timecodes File: ", properties.timecodes_file);
-		WriteIfNotEmpty("Keyframes File: ", properties.keyframes_file);
 
 		WriteIfNotZero("Video AR Mode: ", properties.ar_mode);
 		WriteIfNotZero("Video AR Value: ", properties.ar_value);

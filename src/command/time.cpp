@@ -47,6 +47,8 @@
 #include "../selection_controller.h"
 #include "../video_controller.h"
 
+#include <libaegisub/log.h>
+
 
 #include <algorithm>
 #include <wx/msgdlg.h>
@@ -97,8 +99,7 @@ struct time_smart_fix final : public Command {
 		if (!script)
 			script = Automation4::CreateLuaScriptFromMemory("builtin-smart-timing.lua", GET_DEFAULT_CONFIG(smart_timing));
 		if (!script->GetLoadedState() || script->GetMacros().size() != 1) {
-			wxMessageBox(fmt_tl("Could not load the built-in timing fixer:\n%s", script->GetDescription()),
-				StrDisplay(c), wxOK | wxICON_ERROR, c->parent);
+			LOG_E("time/smart_fix") << "Could not load the built-in timing fixer: " << script->GetDescription();
 			script.reset();
 			return;
 		}

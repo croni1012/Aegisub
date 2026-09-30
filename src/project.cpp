@@ -46,6 +46,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 #include <wx/dir.h>
@@ -108,7 +109,6 @@ void Project::UpdateRelativePaths() {
 	context->ass->Properties.audio_file     = context->path->MakeRelative(audio_file, "?script"sv).generic_string();
 	context->ass->Properties.video_file     = context->path->MakeRelative(video_file, "?script"sv).generic_string();
 	context->ass->Properties.timecodes_file = context->path->MakeRelative(timecodes_file, "?script"sv).generic_string();
-	context->ass->Properties.keyframes_file = context->path->MakeRelative(keyframes_file, "?script"sv).generic_string();
 }
 
 void Project::ReloadAudio() {
@@ -244,7 +244,6 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 	auto audio     = hasSources ? agi::fs::path(properties.audio_file)     : context->path->MakeAbsolute(properties.audio_file, "?script");
 	auto video     = hasSources ? agi::fs::path(properties.video_file)     : context->path->MakeAbsolute(properties.video_file, "?script");
 	auto timecodes = hasSources ? agi::fs::path(properties.timecodes_file) : context->path->MakeAbsolute(properties.timecodes_file, "?script");
-	auto keyframes = hasSources ? agi::fs::path(properties.keyframes_file) : context->path->MakeAbsolute(properties.keyframes_file, "?script");
 
 	if (!hasSources) {
 		// There are TOCTOU races here but they should not cause any actual harm.
@@ -256,12 +255,9 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 
 		if (!agi::fs::Exists(timecodes))
 			timecodes = "";
-
-		if (!agi::fs::Exists(keyframes))
-			keyframes = "";
 	}
 
-	if (isSameFile(video, video_file) && isSameFile(audio, audio_file) && isSameFile(keyframes, keyframes_file) && isSameFile(timecodes, timecodes_file))
+	if (isSameFile(video, video_file) && isSameFile(audio, audio_file) && isSameFile(timecodes, timecodes_file))
 		return;
 
 	if (load_linked == 2) {
@@ -289,8 +285,6 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 			appendFile(video, _("Unload video"), _("Load video file: %s"));
 		if (!isSameFile(timecodes, timecodes_file))
 			appendFile(timecodes, _("Unload timecodes"), _("Load timecodes file: %s"));
-		if (!isSameFile(keyframes, keyframes_file))
-			appendFile(keyframes, _("Unload keyframes"), _("Load keyframes file: %s"));
 
 		if (!appendOccurs || wxMessageBox(str, _("(Un)Load files?"), wxYES_NO | wxCENTRE, context->parent) != wxYES)
 			return;
@@ -311,7 +305,6 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 		addWanted(audio);
 		addWanted(video);
 		addWanted(timecodes);
-		addWanted(keyframes);
 
 		std::unordered_map<std::string, agi::fs::path> source_index;
 
@@ -356,7 +349,6 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 		audio     = resolveFromSources(audio);
 		video     = resolveFromSources(video);
 		timecodes = resolveFromSources(timecodes);
-		keyframes = resolveFromSources(keyframes);
 	}
 
 	bool loaded_video = false;
@@ -377,7 +369,6 @@ void Project::LoadUnloadFiles(ProjectProperties properties) {
 	}
 
 	if (!timecodes.empty()) LoadTimecodes(timecodes);
-	if (!keyframes.empty()) LoadKeyframes(keyframes);
 
 	if (!isSameFile(audio, audio_file)) {
 		if (audio.empty())
@@ -469,6 +460,24 @@ bool Project::DoLoadVideo(agi::fs::path const& path) {
 	keyframes_file.clear();
 	SetPath(video_file, "?video", "Video", path);
 
+	// Prefer the saved scene-change list to codec I-frames. A damaged cache
+	// must not prevent opening the video.
+	try {
+		auto cache = KeyframeCachePath();
+		if (!cache.empty() && agi::fs::FileExists(cache)) {
+			auto cached = agi::keyframe::Load(cache);
+			if (cached.empty() || cached.front() < 0 || cached.back() >= video_provider->GetFrameCount() ||
+				!std::is_sorted(cached.begin(), cached.end()) ||
+				std::adjacent_find(cached.begin(), cached.end()) != cached.end())
+				throw agi::keyframe::KeyframeFormatParseError("Invalid cached keyframe list");
+			keyframes = std::move(cached);
+			SetPath(keyframes_file, "", "Keyframes", cache);
+		}
+	}
+	catch (agi::Exception const& error) {
+		LOG_W("video/keyframes/cache") << error.GetMessage();
+	}
+
 	std::string warning = video_provider->GetWarning();
 	if (!warning.empty())
 		wxMessageBox(to_wx(warning), _("Warning"), wxICON_WARNING | wxOK);
@@ -535,27 +544,43 @@ void Project::CloseTimecodes() {
 	AnnounceTimecodesModified(timecodes);
 }
 
+agi::fs::path Project::KeyframeCachePath() const {
+	if (video_file.empty()) return {};
+	return agi::keyframe::CacheFile(context->path->Decode("?user/loaded-keyframes"), video_file);
+}
+
 void Project::DoLoadKeyframes(agi::fs::path const& path) {
-	keyframes = agi::keyframe::Load(path);
-	SetPath(keyframes_file, "", "Keyframes", path);
+	auto loaded = agi::keyframe::Load(path);
+	auto destination = KeyframeCachePath();
+	if (destination.empty()) destination = path;
+	else if (destination != path) {
+		agi::fs::CreateDirectory(destination.parent_path());
+		agi::keyframe::Save(destination, loaded);
+	}
+	keyframes = std::move(loaded);
+	SetPath(keyframes_file, "", "Keyframes", destination);
 	AnnounceKeyframesModified(keyframes);
 }
 
-bool Project::LoadKeyframes(agi::fs::path path) {
+bool Project::LoadKeyframes(agi::fs::path path, bool quiet) {
+	auto report_error = [&](wxString const& message) {
+		if (quiet) LOG_E("keyframes/load") << from_wx(message);
+		else ShowError(message);
+	};
 	try {
 		DoLoadKeyframes(path);
 		return true;
 	}
 	catch (agi::fs::FileSystemError const& e) {
-		ShowError(e.GetMessage());
+		report_error(to_wx(e.GetMessage()));
 		config::mru->Remove("Keyframes", path);
 	}
 	catch (agi::keyframe::KeyframeFormatParseError const& e) {
-		ShowError(_("Failed to parse keyframes file: ") + to_wx(e.GetMessage()));
+		report_error(_("Failed to parse keyframes file: ") + to_wx(e.GetMessage()));
 		config::mru->Remove("Keyframes", path);
 	}
 	catch (agi::keyframe::UnknownKeyframeFormatError const& e) {
-		ShowError(_("Keyframes file in unknown format: ") + to_wx(e.GetMessage()));
+		report_error(_("Keyframes file in unknown format: ") + to_wx(e.GetMessage()));
 		config::mru->Remove("Keyframes", path);
 	}
 	return false;
@@ -648,7 +673,8 @@ void Project::LoadList(std::vector<agi::fs::path> const& files) {
 
 			if (keyframes.empty()) {
 				try {
-					DoLoadKeyframes(file);
+					// Probe only: the matching video may not be loaded yet.
+					agi::keyframe::Load(file);
 					keyframes = file;
 					continue;
 				} catch (...) { }
@@ -686,9 +712,9 @@ void Project::LoadList(std::vector<agi::fs::path> const& files) {
 		// then and now
 		if (!timecodes.empty())
 			LoadTimecodes(timecodes);
-		if (!keyframes.empty())
-			LoadKeyframes(keyframes);
 	}
+	if (!keyframes.empty())
+		LoadKeyframes(keyframes);
 
 	if (!audio.empty())
 		DoLoadAudio(audio, false);

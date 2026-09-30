@@ -57,6 +57,8 @@
 #include "video_frame.h"
 #include "utils.h"
 
+#include <libaegisub/audio/onset.h>
+#include <libaegisub/audio/provider.h>
 #include <libaegisub/dispatch.h>
 #include <libaegisub/lua/ffi.h>
 #include <libaegisub/lua/modules.h>
@@ -70,11 +72,17 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/scope_exit.hpp>
 #include <cassert>
+#include <cstdint>
+#include <limits>
 #include <mutex>
 #include <optional>
 #include <wx/clipbrd.h>
+#include <wx/button.h>
+#include <wx/dialog.h>
 #include <wx/log.h>
 #include <wx/msgdlg.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
 #include <wx/stc/stc.h>
 
 using namespace agi::lua;
@@ -482,6 +490,83 @@ namespace {
 		return 2;
 	}
 
+	int builtin_timing_result(lua_State *L)
+	{
+		auto modified = luaL_checkinteger(L, 1);
+		auto c = get_context(L);
+		if (!c || modified < 0 || modified > std::numeric_limits<int>::max())
+			return error(L, "Invalid timing result");
+		// Show the result only after the worker has released its window disabler
+		// and the subtitle transaction has committed.
+		lua_pushinteger(L, modified);
+		lua_setfield(L, LUA_REGISTRYINDEX, "builtin_timing_result");
+		return 0;
+	}
+
+	std::optional<int> take_builtin_timing_result(lua_State *L)
+	{
+		lua_getfield(L, LUA_REGISTRYINDEX, "builtin_timing_result");
+		std::optional<int> modified;
+		if (lua_isnumber(L, -1)) modified = static_cast<int>(lua_tointeger(L, -1));
+		lua_pop(L, 1);
+		lua_pushnil(L);
+		lua_setfield(L, LUA_REGISTRYINDEX, "builtin_timing_result");
+		return modified;
+	}
+
+	void show_builtin_timing_result(const agi::Context *c, int modified)
+	{
+		wxDialog dialog(c->parent, wxID_ANY, _("Done"));
+		auto layout = new wxBoxSizer(wxVERTICAL);
+		layout->SetMinSize(dialog.FromDIP(wxSize(360, 0)));
+		layout->AddSpacer(dialog.FromDIP(16));
+		layout->Add(new wxStaticText(&dialog, wxID_ANY,
+			fmt_tl("Lines with corrected timing: %d", modified)),
+			0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT, dialog.FromDIP(24));
+		layout->AddSpacer(dialog.FromDIP(12));
+		auto ok = new wxButton(&dialog, wxID_OK);
+		ok->SetDefault();
+		layout->Add(ok, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, dialog.FromDIP(12));
+		dialog.SetAffirmativeId(wxID_OK);
+		dialog.SetEscapeId(wxID_OK);
+		dialog.SetSizerAndFit(layout);
+		dialog.CenterOnParent();
+		dialog.ShowModal();
+	}
+
+	int builtin_audio_timing_info(lua_State *L)
+	{
+		auto c = get_context(L);
+		auto provider = c ? c->project->AudioProvider() : nullptr;
+		if (!provider) lua_pushnil(L);
+		else push_value(L, c->project->AudioName().string() + ":" +
+			std::to_string(provider->GetNumSamples()) + ":" +
+			std::to_string(provider->GetSampleRate()) + ":" +
+			std::to_string(reinterpret_cast<uintptr_t>(provider)));
+		return 1;
+	}
+
+	int builtin_audio_onset(lua_State *L)
+	{
+		auto start = luaL_checkinteger(L, 1);
+		auto end = luaL_checkinteger(L, 2);
+		double threshold = luaL_checknumber(L, 3);
+		auto duration = luaL_checkinteger(L, 4);
+		if (start < 0 || end > std::numeric_limits<int>::max() || end <= start || duration < 5 || duration > 1000)
+			return error(L, "Invalid audio onset interval");
+		auto c = get_context(L);
+		auto provider = c ? c->project->AudioProvider() : nullptr;
+		if (!provider) { lua_pushnil(L); return 1; }
+		lua_getfield(L, LUA_REGISTRYINDEX, "progress_sink");
+		auto sink = lua_isuserdata(L, -1) ? LuaProgressSink::GetObjPointer(L, -1) : nullptr;
+		lua_pop(L, 1);
+		auto onset = agi::FindAudioOnset(*provider, static_cast<int>(start), static_cast<int>(end),
+			threshold, static_cast<int>(duration), [sink] { return sink && sink->IsCancelled(); });
+		if (onset) push_value(L, *onset);
+		else lua_pushnil(L);
+		return 1;
+	}
+
 	int lua_set_status_text(lua_State *L)
 	{
 		const agi::Context *c = get_context(L);
@@ -556,7 +641,7 @@ namespace {
 			set_field(L, "audio_file", c->path->MakeAbsolute(c->ass->Properties.audio_file, "?script"));
 			set_field(L, "video_file", c->path->MakeAbsolute(c->ass->Properties.video_file, "?script"));
 			set_field(L, "timecodes_file", c->path->MakeAbsolute(c->ass->Properties.timecodes_file, "?script"));
-			set_field(L, "keyframes_file", c->path->MakeAbsolute(c->ass->Properties.keyframes_file, "?script"));
+			set_field(L, "keyframes_file", c->project->KeyframesName());
 		}
 		return 1;
 	}
@@ -758,6 +843,11 @@ namespace {
 		set_field<lua_get_audio_selection>(L, "get_audio_selection");
 		set_field<lua_set_status_text>(L, "set_status_text");
 		set_field<get_frame>(L, "get_frame");
+		if (IsBuiltin()) {
+			set_field<builtin_timing_result>(L, "_timing_result");
+			set_field<builtin_audio_timing_info>(L, "_audio_timing_info");
+			set_field<builtin_audio_onset>(L, "_audio_onset");
+		}
 		lua_createtable(L, 0, 5);
 		set_field<lua_get_text_cursor>(L, "get_cursor");
 		set_field<lua_set_text_cursor>(L, "set_cursor");
@@ -923,9 +1013,12 @@ namespace {
 	void LuaThreadedCall(lua_State *L, int nargs, int nresults, std::string const& title, wxWindow *parent, bool can_open_config)
 	{
 		bool failed = false;
-		BackgroundScriptRunner bsr(parent, title);
+		bool const quiet = LuaScript::GetScriptObject(L)->IsBuiltin();
+		BackgroundScriptRunner bsr(parent, title, !quiet);
 		try {
 			bsr.Run([&](ProgressSink *ps) {
+				// Hiding the progress window must not disable explicit script dialogs,
+				// such as the built-in timing fixer's completion message.
 				LuaProgressSink lps(L, ps, can_open_config);
 
 				// Insert our error handler under the function to call
@@ -1107,6 +1200,7 @@ namespace {
 		c->textSelectionController->DropStagedChanges();
 		LuaStackcheck stackcheck(L);
 		set_context(L, c);
+		take_builtin_timing_result(L);
 		stackcheck.check_stack(0);
 
 		GetFeatureFunction("run");
@@ -1125,6 +1219,7 @@ namespace {
 			LuaThreadedCall(L, 3, 2, from_wx(StrDisplay(c)), c->parent, true);
 		}
 		catch (agi::UserCancelException const&) {
+			take_builtin_timing_result(L);
 			subsobj->Cancel();
 			stackcheck.check_stack(0);
 			return;
@@ -1206,6 +1301,8 @@ namespace {
 		c->textSelectionController->CommitStagedChanges();
 
 		stackcheck.check_stack(0);
+		if (auto modified = take_builtin_timing_result(L))
+			show_builtin_timing_result(c, *modified);
 	}
 
 	bool LuaCommand::IsActive(const agi::Context *c)
