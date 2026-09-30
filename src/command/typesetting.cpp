@@ -30,6 +30,7 @@
 #include "../dialog_motion.h"
 #include "../subtitle_line_combiner.h"
 #include "../include/aegisub/context.h"
+#include "../libresrc/libresrc.h"
 #include "../selection_controller.h"
 #include "../project.h"
 #include "../typesetting_gradient.h"
@@ -128,6 +129,7 @@ namespace {
 struct typesetting_transform_free final :
 	public transform_command<VisualToolTransformMode::Free> {
 	CMD_NAME("typesetting/transform/free")
+	CMD_ICON(typesetting_transform_free_button)
 	STR_MENU("&Free transform")
 	STR_DISP("Free transform")
 	STR_HELP("Scale, turn and move the selected lines on the video, written as tags")
@@ -136,6 +138,7 @@ struct typesetting_transform_free final :
 struct typesetting_transform_arch final :
 	public transform_command<VisualToolTransformMode::Arch> {
 	CMD_NAME("typesetting/transform/arch")
+	CMD_ICON(typesetting_transform_arch_button)
 	STR_MENU("&Arch")
 	STR_DISP("Arch")
 	STR_HELP("Bend the selected lines up or down by dragging on the video")
@@ -144,6 +147,7 @@ struct typesetting_transform_arch final :
 struct typesetting_transform_distort final :
 	public transform_command<VisualToolTransformMode::Distort> {
 	CMD_NAME("typesetting/transform/distort")
+	CMD_ICON(typesetting_transform_distort_button)
 	STR_MENU("&Distort")
 	STR_DISP("Distort")
 	STR_HELP("Drag the four corners of the selected lines on the video")
@@ -151,6 +155,7 @@ struct typesetting_transform_distort final :
 
 struct typesetting_transform_auto_perspective final : public Command {
 	CMD_NAME("typesetting/transform/auto_perspective")
+	CMD_ICON(typesetting_transform_autoperspective_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("Auto &perspective")
 	STR_DISP("Auto perspective")
@@ -175,6 +180,7 @@ struct typesetting_transform_auto_perspective final : public Command {
 struct typesetting_transform_warp final :
 	public transform_command<VisualToolTransformMode::Warp> {
 	CMD_NAME("typesetting/transform/warp")
+	CMD_ICON(typesetting_transform_warp_button)
 	STR_MENU("&Warp")
 	STR_DISP("Warp")
 	STR_HELP("Bend the selected lines by dragging a 3x3 mesh over the video")
@@ -244,6 +250,7 @@ struct typesetting_flip_vertical final : public flip_command<false> {
 
 struct typesetting_gradient final : public Command {
 	CMD_NAME("typesetting/gradient")
+	CMD_ICON(typesetting_gradient_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("Gradient")
 	STR_DISP("Gradient")
@@ -310,6 +317,7 @@ struct typesetting_gradient_delete final : public Command {
 
 struct typesetting_glitch final : public Command {
 	CMD_NAME("typesetting/glitch")
+	CMD_ICON(typesetting_glich_effekt_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("Glitch effect")
 	STR_DISP("Glitch effect")
@@ -371,6 +379,7 @@ struct typesetting_glitch_delete final : public Command {
 
 struct typesetting_textbox final : public Command {
 	CMD_NAME("typesetting/textbox")
+	CMD_ICON(typesetting_textbox_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("Textbox")
 	STR_DISP("Textbox")
@@ -403,6 +412,7 @@ struct typesetting_image_insert_quick final : public Command {
 
 struct typesetting_image_insert_insert final : public Command {
 	CMD_NAME("typesetting/image_insert/insert")
+	CMD_ICON(typesetting_image_insert_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("&Insert")
 	STR_DISP("Image insert")
@@ -415,6 +425,7 @@ struct typesetting_image_insert_insert final : public Command {
 
 struct typesetting_image_insert_edit final : public Command {
 	CMD_NAME("typesetting/image_insert/edit")
+	CMD_ICON(typesetting_image_insert_editing_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("With &editing...")
 	STR_DISP("ImageEditor insert")
@@ -438,6 +449,7 @@ struct typesetting_image_insert_settings final : public Command {
 
 struct typesetting_motion_apply final : public Command {
 	CMD_NAME("typesetting/motion/apply")
+	CMD_ICON(typesetting_motion_apply_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("&Apply")
 	STR_DISP("Apply motion")
@@ -484,6 +496,7 @@ struct typesetting_motion_revert final : public Command {
 
 struct typesetting_motion_trim final : public Command {
 	CMD_NAME("typesetting/motion/trim")
+	CMD_ICON(typesetting_motion_trim_button)
 	CMD_TYPE(COMMAND_VALIDATE)
 	STR_MENU("&Trim")
 	STR_DISP("Motion trim")

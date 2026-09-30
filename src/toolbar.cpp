@@ -42,6 +42,7 @@
 #include <wx/button.h>
 #include <wx/tglbtn.h>
 #include <wx/msgdlg.h>
+#include <wx/stattext.h>
 #include <wx/toolbar.h>
 
 #ifdef __WXMSW__
@@ -313,6 +314,16 @@ namespace {
 			bool pending_separator = false;
 
 			for (json::String const& command_name : arr) {
+				if (command_name == "spacer/40") {
+					// A fixed, non-focusable gap without a separator line.
+					auto size = FromDIP(wxSize(40, 1));
+					auto spacer = new wxStaticText(this, wxID_ANY, wxEmptyString,
+						wxDefaultPosition, size, wxST_NO_AUTORESIZE);
+					spacer->SetMinSize(size);
+					AddControl(spacer);
+					pending_separator = false;
+					continue;
+				}
 				if (command_name.empty()) {
 					pending_separator = have_tool;
 					continue;
