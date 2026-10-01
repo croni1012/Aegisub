@@ -19,5 +19,6 @@ A meglévő fontválasztó le lett cserélve egy újra, mely a sorban az `fn` go
 - ideiglenes mentési lehetőség (pl keresésnél félrerakni a jónak tűnő fontokat)
 
 ![Példa](../media/font-picker.png)
+![Példa - beállítások](../media/font-picker2.png)
 
 [Vissza](README.md)

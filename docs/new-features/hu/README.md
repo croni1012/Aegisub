@@ -24,7 +24,7 @@
 - **<ins>Fényerő és lejátszási sebesség</ins>**: a videó fényerejét 0-400% között, a lejátszási sebességet pedig 0.25 - 10x között lehet beállítani (jobb klikkel resetelni), és a hang is igazodik hozzá. Támogatott audio playerek: DirectSound, PulseAudio és ALSA
 
 ### Egyéb
-- Sorok eltolása az aktuális képkockához a végidejük alapján (Időzítés menü vagy `time/frame/current_end` parancs)
+- Sorok eltolása az aktuális képkockához a végidejük alapján (`Időzítés` menü vagy `time/frame/current_end` parancs)
 
 ## Formázóknak
 
