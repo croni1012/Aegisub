@@ -2,7 +2,7 @@
 
 # Új fontválasztó
 
-A meglévő fontválasztó le lett cserélve egy újra, mely a stílus szerkesztésnél a nyílra jön fel. 
+A meglévő fontválasztó le lett cserélve egy újra, mely a sorban az `fn` gombra és a stílus szerkesztésnél a nyílra jön fel. 
 
 - sokkal gyorsabb, cache alapon működik és rendes keresés van
 - lehet egyszerre több sornál is szerkeszteni
