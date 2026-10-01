@@ -7,10 +7,10 @@
 Az AI használatával több területen is segítségünkre lehet, amelyhez szükséges egy összeköttetés, mely beállításához útmutató az alábbi linken található:
 [AI-kapcsolat beállítása](ai-connection.md)
 
-Az alább látható funkciókhoz OpenAI-kapcsolat szükséges, javasolt a legfrissebb modell használata, melyet az AI -> AI-kapcsolat beállítása... menüpontban lehet megadni és az alábbi linken található. Jelenleg a legfrissebb "sol" model a javasolt.
+Az alább látható funkciókhoz OpenAI-kapcsolat szükséges, javasolt a legfrissebb modell használata, melyet az `AI -> AI-kapcsolat beállítása...` menüpontban lehet megadni és az alábbi linken található. Jelenleg a legfrissebb "sol" model a javasolt.
 [AI modellek](https://developers.openai.com/api/docs/models)
 
-> A költség természetesen a használattól függ, de feliratonként pár cent lehet maximum. Ketten használunk egy kulcsot és hónapok óta nem használt el 1 EUR-t.
+> A költség természetesen a használattól függ, de feliratonként pár cent lehet maximum. Ketten használunk egy kulcsot és hónapok óta nem használt el 1 EUR-t sem.
 
 ## AI review
 

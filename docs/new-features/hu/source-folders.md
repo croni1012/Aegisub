@@ -2,7 +2,7 @@
 
 # Forrásmappák
 
-A Beállítások - Általános - Forrásmappák résznél megadhatsz mappákat, hogy hol keressen videót/audiót a program. A felirat betöltésénél a hozzátartozó fájlnév alapján keres és egyezés esetén betölti, ha korábban kértük a fájlok betöltését.
+A `Beállítások - Általános - Forrásmappák` résznél megadhatsz mappákat, hogy hol keressen videót/audiót a program. A felirat betöltésénél a hozzátartozó fájlnév alapján keres és egyezés esetén betölti, ha korábban kértük a fájlok betöltését.
 
 > Többet is megadhatsz. A listán sorrendben megy végig és az első egyezésnél betölti a videót.
 
