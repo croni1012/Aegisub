@@ -1,39 +1,23 @@
-# Villámgyors fontválasztó azonnali előnézettel
+[Vissza](README.md)
 
-[Új funkciók](README.md) · [English](../en/font-picker.md)
+# Új fontválasztó
 
-**Hol találod:** A feliratszerkesztő betűtípusválasztója.
+A meglévő fontválasztó le lett cserélve egy újra, mely a stílus szerkesztésnél a nyílra jön fel. 
 
-A betűtípuslista gyorsítótárat használ, amelyet a betűtípusok változásakor kell frissíteni. A választó megjegyzi az ablak helyét, és a név bármely részére lehet keresni.
+- sokkal gyorsabb, cache alapon működik és rendes keresés van
+- lehet egyszerre több sornál is szerkeszteni
+- kiválasztáskor rögtön frissül a sor, hogy látható legyen, de ha lemégsézed, akkor visszaállítja az eredeti állapotot
+- nem csoportosít, átláthatóbbak a fontok
+- lehet nyelvi szűrőket megadni (`Beállítások → Betűtípus-választó`-ban), hogy pl. csak magyar karaktereket tartalmazó fontokat listázzon (alapból magyar és kanji szűrő van hozzáadva)
+- "@" fontokat le lehet rejteni
+- látni a fontok rendes neveit és mintát is
+- a lista minta szövegét és az alsó preview szövegét a `Beállítások → Betűtípus-választó`-nél lehet állítani
+- az ablak pozíciója és mérete megmarad ott, ahol hagytad
+- lehet változtatni `\fs`, `\fscx`, `\fscy` és `\fsp` értékeket is
+- Minden betűtípus, Mostanában telepített, Legutóbbi, Leggyakoribb, Kedvencek és Saját listák menüpont
+- saját listákat lehet létrehozni, abba adott felirat fontjait beimportálni
+- ideiglenes mentési lehetőség (pl keresésnél félrerakni a jónak tűnő fontokat)
 
-## Szűrés és rendszerezés
+![Példa](../media/font-picker.png)
 
-- Magyar, kanji és saját karakterkészlet-szűrők.
-- A @ fontok elrejthetők.
-
-- Legutóbbi, leggyakoribb, kedvenc, ideiglenes és saját listák.
-
-## Azonnali kipróbálás
-
-A kijelölt sorok rögtön a választott fonttal jelennek meg. Az `\fs`, `\fscx`, `\fscy`, `\fsp` és az alapvető szövegstílusok is állíthatók.
-
-**Saját mintaszöveg:** a Beállítások → Felhasználói felület alatt módosítható.
-
-## Gyorsbillentyűhöz kereshető parancsok
-
-- `edit/font`
-
-## Képek és bemutatók
-
-### A teljesen új fontválasztó
-
-![Fontválasztó kategóriákkal és előnézettel](../media/font-picker.png)
-
-Gyors keresés, nyelvi szűrők, kategóriák és azonnali előnézet.
-
-## Kapcsolódó funkciók
-
-- [Szövegdoboz](text-box.md)
-- [Szövegszerkesztés](text-editing.md)
-
-[Vissza a funkciójegyzékhez](README.md)
+[Vissza](README.md)

@@ -19,9 +19,9 @@
 - **<ins>Szöveg másolása a fordítónak</ins>**: jobb klikk menüben `Szöveg másolása a fordítónak` vagy `grid/copytext/translator` paranccsal adott sort lehet másolni és ilyen formában formázás és egyéb karakterek nélkül ki lehet másolni a sort: `01:42 --- "Nézze meg ezt."`
 
 ### Felület
-- [Dark mód](dark-mode.md): rendes dark mód ikonokkal
-- [Fényerő és lejátszás](playback.md): videó fényerejének és lejátszási sebessége
 - [Fontválasztó](font-picker.md): teljesen újradolgozott fontválasztó, rengeteg extrával
+- [Dark mód](dark-mode.md): rendes dark mód ikonokkal
+- **<ins>Fényerő és lejátszási sebesség</ins>**: a videó fényerejét 0-400% között, a lejátszási sebességet pedig 0.25 - 10x között lehet beállítani (jobb klikkel resetelni), és a hang is igazodik hozzá. Támogatott audio playerek: DirectSound, PulseAudio és ALSA
 
 ### Egyéb
 - Sorok eltolása az aktuális képkockához a végidejük alapján (Időzítés menü vagy `time/frame/current_end` parancs)
