@@ -2,7 +2,7 @@
 
 ## Funkciók mindenkinek
 
-> Azon funkciók és fejlesztések listája, mely nem csak formázók számára lehetnek érdekesek.
+> Azon funkciók és fejlesztések listája, mely nem csak formázók számára lehetnek érdekesek. Néhány funkció külön oldalon van részletezve. 
 
 - MKV betöltés: a fájl menüben betölthető az MKV videó egyben felirattal, videóval egy kattintással
 - `video/open/recent` parancs a legutóbbi videó betöltéséhez
@@ -17,6 +17,8 @@
 - Sorok eltolása az aktuális képkockához a végidejük alapján (Időzítés menü vagy `time/frame/current_end` parancs)
 
 ## Formázóknak
+
+> Kifejezetten formázók számára fejlesztett kényelmi funkciók, hogy egy rész elkészítése könnyebb legyen, adott esetben akár jóval hatékonyabb is. Néhány funkció ezelőtt akár elérhetetlen is volt a kezdő formázók számára, mert akár programozói ismeretek voltak szükségesek hozzá vagy a scriptek teljeskörű ismerete és egy kis kreativitás (pl. glitch effekt, szövegdoboz, szekresztéses képbeillesztés)
 
 - [Sorok elrejtése](hide-subtitles.md)
 - [Színkijelölés](color-picker.md)
@@ -36,7 +38,7 @@
 
 ## Apróbb javítások
 
-> Olyan apróbb javítások listája, ami meglévő funkción finomít kicsit.
+> Olyan apróbb javítások listája, melyek már meglévő dolgon javítanak kicsit és nem fért máshova.
 
 - 32-nél több fájlt tartalmazó MKV-k megnyitása
 - Videó doboz villogása méretezés közben
