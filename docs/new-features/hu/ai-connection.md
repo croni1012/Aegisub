@@ -11,7 +11,7 @@ Létrehozáshoz viszont nem szükséges komplett előfizetés, elég csupán egy
 
 > Ez a model a szöveges funkciókhoz van főként.
 
-1. Lépj be az alábbi oldalon: ![https://platform.openai.com/login](https://platform.openai.com/login)
+1. Lépj be az alábbi oldalon: [https://platform.openai.com/login](https://platform.openai.com/login)
 2. Ingyenes csomaggal indulj, szükséges adatokat megadhatsz, ha gondolod
 3. Az alábbi oldalon adj hozzá fizetési módot: [https://platform.openai.com/settings/organization/billing/overview](https://platform.openai.com/settings/organization/billing/overview)
 4. Auto-reload-ot kapcsold ki és a minimum összeget add hozzá
@@ -26,6 +26,6 @@ Ezen szolgáltatás lényegében ingyenes, mert havi több száz használatot en
 
 > Ez a model formázási funkciókhoz van főként, mint pl. a szöveg eltávolítás.
 
-1. Lépj be az alábbi oldalon: ![https://cloudinary.com/users/register_free](https://cloudinary.com/users/register_free)
+1. Lépj be az alábbi oldalon: [https://cloudinary.com/users/register_free](https://cloudinary.com/users/register_free)
 2. Az "API Keys" menüpontban adj hozzá új kulcsot
 3. Másold be az API kulcsot, a secretet és fenti a cloud namet (cím mellett található). Figyelj oda, hogy spacet ne tartalmazzon!
