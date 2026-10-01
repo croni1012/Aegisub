@@ -11,15 +11,15 @@
 - [Forrásmappák](source-folders.md): videók kényelmesebb betöltéséhez
 
 ### Munkafolyamat
-- [Forrássorok](source-lines.md)
-- [AI review és utóellenőrzés](ai-review.md)
-- [Keresés feliratokban](find-in-folder.md)
-- [Szövegszerkesztés](text-editing.md)
+- [Forrássorok](source-lines.md): forrás mondat (pl. angol) automatikus megjegyzése
+- [AI review és utóellenőrzés](ai-review.md): jelenet fordításának ellenőrzése japánból hang alapján, utólagos helyesírási, stilisztikai, fordítási ellenőrzés
+- [Keresés feliratokban](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
+- [Szövegszerkesztés](text-editing.md): szöveg módosítás és szövegrészletek megjegyzésbe rakása
 
 ### Felület
-- [Dark mód](dark-mode.md)
-- [Fényerő és lejátszás](playback.md)
-- [Fontválasztó](font-picker.md)
+- [Dark mód](dark-mode.md): rendes dark mód ikonokkal
+- [Fényerő és lejátszás](playback.md): videó fényerejének és lejátszási sebessége
+- [Fontválasztó](font-picker.md): teljesen újradolgozott fontválasztó, rengeteg extrával
 
 ### Egyéb
 - Sorok eltolása az aktuális képkockához a végidejük alapján (Időzítés menü vagy `time/frame/current_end` parancs)
