@@ -1,30 +1,13 @@
-# Forrássorok és kényelmes MKV-betöltés
+[Vissza](README.md)
 
-[Új funkciók](README.md) · [English](../en/source-lines.md)
+# Forrássorok
 
-**Hol találod:** Fájl → MKV megnyitása; forrássor a szerkesztőben.
+A program magától megjegyzi és tárolja a forrás felirat eredeti verzióját. A funkció csak akkor működik, ha videóból töltjük be a feliratot. A feliratsor különféle műveleteivel automatikusan szinkronizálja az adatot és mentéskor extradatában tárolja, hogy a lektornak ott legyen megnyitáskor például az angol eredeti mondat. 
 
-Ha a feliratot videóból nyitod meg, minden sor saját forrássort kaphat. Ez mentés után is megmarad, és a szerkesztőfelületen bármikor előhívható.
+A funkciót a szövegdobozban lehet bekapcsolni "Forrás sor mutatása" pipával.
 
-## Mire jó a forrássor?
+> Vigyázat! Más verziós Aegisubban megnyitva és mentve a feliraton elvesztődik a forrássor.
 
-Egy fordító, lektor vagy szerkesztő azonnal látja az eredeti – például angol – mondatot a magyar sor mellett.
+![Példa](../media/source-lines.png)
 
-**Példa**
-
-A lektor sorról sorra összevetheti a fordítást az eredetivel külön fájl megnyitása nélkül.
-
-## MKV megnyitás
-
-MKV betöltésekor a program egyszerre megnyithatja a videót és a benne lévő feliratot. A 32-nél több fájlt tartalmazó MKV-k kezelése is javítva lett.
-
-## Gyorsbillentyűhöz kereshető parancsok
-
-- `subtitle/open/mkv`
-
-## Kapcsolódó funkciók
-
-- [Keresés feliratokban](find-in-folder.md)
-- [AI review és utóellenőrzés](ai-review.md)
-
-[Vissza a funkciójegyzékhez](README.md)
+[Vissza](README.md)
