@@ -4,16 +4,24 @@
 
 > Azon funkciók és fejlesztések listája, mely nem csak formázók számára lehetnek érdekesek. Néhány funkció külön oldalon van részletezve. 
 
+### Videók, hozzárendelt fájlok
 - MKV betöltés: a fájl menüben betölthető az MKV videó egyben felirattal, videóval egy kattintással
 - `video/open/recent` parancs a legutóbbi videó betöltéséhez
-- [Forrásmappák](source-folders.md)
+- Utólagos betöltés: a felirat menüből elérhető az aktuális fájlhoz tartozó videó/audió betöltése utólag
+- [Forrásmappák](source-folders.md): videók kényelmesebb betöltéséhez
+
+### Munkafolyamat
 - [Forrássorok](source-lines.md)
 - [AI review és utóellenőrzés](ai-review.md)
-- [Dark mód](dark-mode.md)
 - [Keresés feliratokban](find-in-folder.md)
-- [Fontválasztó](font-picker.md)
-- [Fényerő és lejátszás](playback.md)
 - [Szövegszerkesztés](text-editing.md)
+
+### Felület
+- [Dark mód](dark-mode.md)
+- [Fényerő és lejátszás](playback.md)
+- [Fontválasztó](font-picker.md)
+
+### Egyéb
 - Sorok eltolása az aktuális képkockához a végidejük alapján (Időzítés menü vagy `time/frame/current_end` parancs)
 
 ## Formázóknak

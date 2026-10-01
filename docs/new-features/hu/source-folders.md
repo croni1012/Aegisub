@@ -1,22 +1,9 @@
-# Forrásmappák és hozzárendelt fájlok
+# Forrásmappák
 
-[Új funkciók](README.md) · [English](../en/source-folders.md)
+A Beállítások - Általános - Forrásmappák résznél megadhatsz mappákat, hogy hol keressen videót/audiót a program. A felirat betöltésénél a hozzátartozó fájlnév alapján keres és egyezés esetén betölti, ha korábban kértük a fájlok betöltését.
 
-**Hol találod:** Beállítások: forrásmappák; Felirat → Hozzárendelt fájlok betöltése.
+> Többet is megadhatsz. A listán sorrendben megy végig és az első egyezésnél betölti a videót.
 
-Több forrásmappát adhatsz meg; a program ezekben, sorrend szerint keresi a felirathoz tartozó videót fájnév-egyezés alapján.
+![Fontválasztó kategóriákkal és előnézettel](../media/source-folders.png)
 
-- Ha érvényes abszolút videóútvonal van megadva, az kap elsőbbséget.
-- A videó később kézzel is cserélhető.
-
-- A Felirat menüből utólag is kérhető a hozzárendelt fájlok betöltése.
-
-## Gyorsbillentyűhöz kereshető parancsok
-
-- `subtitle/loadfiles`
-
-## Kapcsolódó funkciók
-
-- [Forrássorok és MKV](source-lines.md)
-
-[Vissza a funkciójegyzékhez](README.md)
+> Ha a feliratban található útvonalon létezik a hozzárendelt videó/audió, akkor az élvez elsőbbséget.
