@@ -1,34 +1,13 @@
-# Keresés egy teljes mappa felirataiban
+[Vissza](README.md)
 
-[Új funkciók](README.md) · [English](../en/find-in-folder.md)
+# Keresés mappában
 
-**Hol találod:** Szerkesztés → Keresés mappában.
+A `Szerkesztés → Keresés mappában..." menüponton érheted el, melynek segítségével rekurzívan lehet keresni egy mappa feliratfájljaiban gyorsan. A megjelenő találatok közeli 2-2 sorát is mutatja adott találatnál, amiket kiválasztva felülre betölti a tartalmat és ki lehet másolni a szöveget vagy a teljes sort is. A találathoz tartozó feliratot meg is lehet nyitni külön Aegisub ablakban, és rögtön az adott sorra is ugrik.
 
-A kereső rekurzívan átnézi egy mappa feliratfájljait, és a találat helyén akár meg is nyithatod a megfelelő fájlt az adott pozíción.
+Kereséskor lehet kis- és nagybetű megközelítéssel, teljes szöveggel és regex-szel is keresni, stílusokat hozzáadni vagy elvenni a keresésből.
 
-- Szövegben és forrássorban egyaránt. Teljes szó és reguláris kifejezés is kereshető.
-- Stílusokat bevonhatsz vagy kizárhatsz.
+> Forrássorokban is keres, így meg lehet találni azt, hogy egy bizonyos kifejezést hogyan fordítottuk korábban.
 
-- A listában a fordítás mellett az angol forrássor is megjelenik.
+![Példa](../media/find-in-folder.png)
 
-**Példa**
-
-Egy hosszú anime korábbi részeiben gyorsan megkeresheted egy név vagy visszatérő kifejezés korábbi fordítását.
-
-## Gyorsbillentyűhöz kereshető parancsok
-
-- `edit/find_in_folder`
-
-## Képek és bemutatók
-
-### Rekurzív keresés több feliratfájlban
-
-![Mappában található feliratok keresőablaka](../media/find-in-folder.png)
-
-Találatok több fájlból, közvetlen megnyitási lehetőséggel.
-
-## Kapcsolódó funkciók
-
-- [Forrássorok és MKV](source-lines.md)
-
-[Vissza a funkciójegyzékhez](README.md)
+[Vissza](README.md)

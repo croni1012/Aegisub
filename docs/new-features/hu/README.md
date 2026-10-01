@@ -13,7 +13,7 @@
 ### Munkafolyamat
 - [Forrássorok](source-lines.md): forrás mondat (pl. angol) automatikus megjegyzése
 - [AI review és utóellenőrzés](ai-review.md): jelenet fordításának ellenőrzése japánból hang alapján, utólagos helyesírási, stilisztikai, fordítási ellenőrzés
-- [Keresés feliratokban](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
+- [Keresés mappában](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
 - [Szövegszerkesztés](text-editing.md): szöveg módosítás és szövegrészletek megjegyzésbe rakása
 
 ### Felület
