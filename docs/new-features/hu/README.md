@@ -5,17 +5,17 @@
 > Azon funkciók és fejlesztések listája, mely nem csak formázók számára lehetnek érdekesek. Néhány funkció külön oldalon van részletezve. 
 
 ### Videók, hozzárendelt fájlok
-- MKV betöltés: a fájl menüben betölthető az MKV videó egyben felirattal, videóval egy kattintással
-- `video/open/recent` parancs a legutóbbi videó betöltéséhez
-- Utólagos betöltés: a felirat menüből elérhető az aktuális fájlhoz tartozó videó/audió betöltése utólag
+- **MKV betöltés**: a fájl menüben betölthető az MKV videó egyben felirattal, videóval egy kattintással
+- **Gyors videóbetöltés**: `video/open/recent` parancs a legutóbbi videó betöltéséhez
+- **Utólagos betöltés**: a felirat menüből elérhető az aktuális fájlhoz tartozó videó/audió betöltése utólag
 - [Forrásmappák](source-folders.md): videók kényelmesebb betöltéséhez
 
 ### Munkafolyamat
 - [Forrássorok](source-lines.md): forrás mondat (pl. angol) automatikus megjegyzése
 - [AI review és utóellenőrzés](ai-review.md): jelenet fordításának ellenőrzése japánból hang alapján, utólagos helyesírási, stilisztikai, fordítási ellenőrzés
 - [Keresés mappában](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
-- Szöveg módosítás: kijelölt sorokra jobb klikk menüben `Szöveg módosítása` vagy `edit/line/change-text` paranccsal több sor szövegét lehet egyszerre módosítani és a karakterenkénti gradientet is újraalkalmazza arányosan
-- Szöveg megjegyzésbe rakása: kijelölt szövegrész az editorban jobb klikk menüben `Megjegyzés` vagy `edit/comment` paranccsal {} karakterek közé rakható
+- **Szöveg módosítás**: kijelölt sorokra jobb klikk menüben `Szöveg módosítása` vagy `edit/line/change-text` paranccsal több sor szövegét lehet egyszerre módosítani és a karakterenkénti gradientet is újraalkalmazza arányosan
+- <ins>Szöveg megjegyzésbe rakása</ins>: kijelölt szövegrész az editorban jobb klikk menüben `Megjegyzés` vagy `edit/comment` paranccsal {} karakterek közé rakható
 - Szöveg másolása a fordítónak: jobb klikk menüben `Szöveg másolása a fordítónak` vagy `grid/copytext/translator` paranccsal adott sort lehet másolni és ilyen formában formázás és egyéb karakterek nélkül ki lehet másolni a sort: `01:42 --- "Nézze meg ezt."`
 
 ### Felület
