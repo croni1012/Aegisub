@@ -14,7 +14,9 @@
 - [Forrássorok](source-lines.md): forrás mondat (pl. angol) automatikus megjegyzése
 - [AI review és utóellenőrzés](ai-review.md): jelenet fordításának ellenőrzése japánból hang alapján, utólagos helyesírási, stilisztikai, fordítási ellenőrzés
 - [Keresés mappában](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
-- [Szövegszerkesztés](text-editing.md): szöveg módosítás és szövegrészletek megjegyzésbe rakása
+- Szöveg módosítás: kijelölt sorokra jobb klikk menüben `Szöveg módosítása` vagy `edit/line/change-text` paranccsal több sor szövegét lehet egyszerre módosítani és a karakterenkénti gradientet is újraalkalmazza arányosan
+- Szöveg megjegyzésbe rakása: kijelölt szövegrész az editorban jobb klikk menüben `Megjegyzés` vagy `edit/comment` paranccsal {} karakterek közé rakható
+- Szöveg másolása a fordítónak: jobb klikk menüben `Szöveg másolása a fordítónak` vagy `grid/copytext/translator` paranccsal adott sort lehet másolni és ilyen formában formázás és egyéb karakterek nélkül ki lehet másolni a sort: `01:42 --- "Nézze meg ezt."`
 
 ### Felület
 - [Dark mód](dark-mode.md): rendes dark mód ikonokkal

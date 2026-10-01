@@ -1,6 +1,6 @@
 # AI kapcsolat beállítása
 
-Az `AI -> AI-kapcsolat beállítása...` menüpontban lehet megadni a kapcsolódási lehetőségeket, melyhez alább olvasható útmutató.
+Az `AI → AI-kapcsolat beállítása...` menüpontban lehet megadni a kapcsolódási lehetőségeket, melyhez alább olvasható útmutató.
 
 ![Példa](../media/ai-connection.png)
 
