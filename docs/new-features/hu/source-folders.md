@@ -4,6 +4,6 @@ A Beállítások - Általános - Forrásmappák résznél megadhatsz mappákat, 
 
 > Többet is megadhatsz. A listán sorrendben megy végig és az első egyezésnél betölti a videót.
 
-![Fontválasztó kategóriákkal és előnézettel](../media/source-folders.png)
-
 > Ha a feliratban található útvonalon létezik a hozzárendelt videó/audió, akkor az élvez elsőbbséget.
+
+![Fontválasztó kategóriákkal és előnézettel](../media/source-folders.png)
