@@ -1,5 +1,7 @@
 [Magyar](README.md) | [English](../en/README.md)
 
+# Aegisub -- nyaa's edition: [szerezed be innen](https://github.com/croni1012/Aegisub/releases)
+
 ## Funkciók mindenkinek
 
 > Azon funkciók és fejlesztések listája, mely nem csak formázók számára lehetnek érdekesek. Néhány funkció külön oldalon van részletezve. 
