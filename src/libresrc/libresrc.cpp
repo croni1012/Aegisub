@@ -118,6 +118,26 @@ wxBitmapBundle libresrc_getbitmapbundle(const LibresrcBlob *images, size_t count
 		bitmaps.back().SetScaleFactor(double(selected_images[i].scale) / height);
 	}
 
+	// A bundle containing only a large source bitmap prefers its physical size
+	// even when its scale factor describes a smaller icon. Supply smaller DPI
+	// variants as well so menus and toolbars can select an appropriate size.
+	if (!bitmaps.empty()) {
+		auto smallest = std::min_element(bitmaps.begin(), bitmaps.end(),
+			[](wxBitmap const& a, wxBitmap const& b) { return a.GetHeight() < b.GetHeight(); });
+		if (smallest->GetHeight() > height) {
+			auto image = smallest->ConvertToImage();
+			for (double scale : {1.0, 1.5, 2.0, 3.0}) {
+				int target_height = static_cast<int>(std::lround(height * scale));
+				if (target_height >= image.GetHeight()) break;
+				int target_width = std::max(1, static_cast<int>(std::lround(
+					double(image.GetWidth()) * target_height / image.GetHeight())));
+				wxBitmap bitmap(image.Scale(target_width, target_height, wxIMAGE_QUALITY_HIGH));
+				bitmap.SetScaleFactor(double(target_height) / height);
+				bitmaps.push_back(std::move(bitmap));
+			}
+		}
+	}
+
 	auto bundle = wxBitmapBundle::FromBitmaps(bitmaps);
 	cache[key] = bundle;
 
