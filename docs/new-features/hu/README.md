@@ -22,6 +22,7 @@ A projekt azért készült, hogy megkönnyítse a fansubbolást vagy akár olyan
 - [Forrássorok](source-lines.md): forrás mondat (pl. angol) automatikus megjegyzése
 - [AI review és utóellenőrzés](ai-review.md): jelenet fordításának ellenőrzése japánból hang alapján, utólagos helyesírási, stilisztikai, fordítási ellenőrzés
 - [Keresés mappában](find-in-folder.md): adott kifejezésre való kényelmes keresés több feliratban egyszerre
+- **<ins>Kulcskocka beolvasás és időzítés javítás</ins>**: beépített funkció a kulcskockák beolvasásához ([bővebb infó](https://github.com/eldonishere/scuisei-rs)) a `Videó → Kulcskockák betöltése a videóból` menüpontban és kijelölt sorok időzítését lehet intelligensen javítani az `Időzítés → Kijelölt sorok intelligens javítása...` menüpontban (folytonosság, kulcskockához igazítás, stb -- **javasolt a munkamenet legelején futtatni**)
 - **<ins>Szöveg módosítás</ins>**: kijelölt sorokra jobb klikk menüben `Szöveg módosítása` vagy `edit/line/change-text` paranccsal több sor szövegét lehet egyszerre módosítani és a karakterenkénti gradientet is újraalkalmazza arányosan
 - **<ins>Szöveg megjegyzésbe rakása</ins>**: kijelölt szövegrész az editorban jobb klikk menüben `Megjegyzés` vagy `edit/comment` paranccsal {} karakterek közé rakható
 - **<ins>Szöveg másolása a fordítónak</ins>**: jobb klikk menüben `Szöveg másolása a fordítónak` vagy `grid/copytext/translator` paranccsal adott sort lehet másolni és ilyen formában formázás és egyéb karakterek nélkül ki lehet másolni a sort: `01:42 --- "Nézze meg ezt."`
