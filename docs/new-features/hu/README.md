@@ -39,9 +39,9 @@
 - [Pipetta mód](clip-eyedropper.md): clip hozzáadása színtartomány szerint
 - [Maszkolás](masks.md): maszk létrehozás egyszerűbben, szövegeltávolítás AI-al
 - [Alakzatok rajzolása](shapes.md): paint szerű alakzat rajzolás + szabadkezű rajz
-- [Színátmenet](gradient.md): vizuális gradient létrehozás, ami egyszerre kezeli a karakterenkénti, az elforgatott és a radiális színátmeneteket, külön arányokban megadható a `\c`, `\3c` és `\4c` + animáció lehetőség
+- [Színátmenet](gradient.md): vizuális gradient létrehozás, ami egyszerre kezeli a karakterenkénti, az elforgatott és a radiális színátmeneteket, külön arányokban megadható a `\c`, `\3c` és `\4c` + animáció lehetőség (pl. fénycsík végigmenéséhez)
 - [Szövegdoboz](text-box.md): képernyőn szerkeszthető szövegdoboz sorkizárt rendezéssel és sormagasság állítással
-- [Glitch effekt](glitch.md): különféle glitch effektek létrehozása vizuálisan + animáció lehetőség (pl. fénycsík végigmenéséhez)
+- [Glitch effekt](glitch.md): különféle glitch effektek létrehozása vizuálisan + animáció lehetőség
 - [Motion és Auto motion](motion.md): újragondolt motion kezelés, mely egyszerre kezeli a perspektívát is (akár régi Mochával) és kényelmesebb használatot biztosít Mocha mellett + auto motion
 - [Képbeillesztés](image-insert.md): képek beillesztésének lehetősége (PNG-t is támogat áttetszőséggel) + photoshop szerű szerkesztés
 - [Vizuális eszközök](visual-tools.md): extra funkcionalitások a videódobozon megjelenő vizuális eszközökben
