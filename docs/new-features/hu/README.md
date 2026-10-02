@@ -21,7 +21,7 @@
 ### Felület
 - [Fontválasztó](font-picker.md): teljesen újradolgozott fontválasztó, rengeteg extrával
 - [Dark mód](dark-mode.md): rendes dark mód ikonokkal
-- **<ins>Fényerő és lejátszási sebesség</ins>**: a videó fényerejét 0-400% között, a lejátszási sebességet pedig 0.25 - 10x között lehet beállítani (jobb klikkel resetelni), és a hang is igazodik hozzá. Támogatott audio playerek: DirectSound, PulseAudio és ALSA
+- **<ins>Fényerő és lejátszási sebesség</ins>**: a videó fényerejét 0-400% között, a lejátszási sebességet pedig 0.25 - 10x között lehet beállítani a videódoboz alatt (jobb klikkel resetelni), és a hang is igazodik hozzá. Támogatott audio playerek: DirectSound, PulseAudio és ALSA
 
 ### Egyéb
 - Sorok eltolása az aktuális képkockához a végidejük alapján (`Időzítés` menü vagy `time/frame/current_end` parancs)
@@ -30,21 +30,21 @@
 
 > Kifejezetten formázók számára fejlesztett kényelmi funkciók, hogy egy rész elkészítése könnyebb legyen, adott esetben akár jóval hatékonyabb is. Néhány funkció ezelőtt akár elérhetetlen is volt a kezdő formázók számára, mert akár programozói ismeretek voltak szükségesek hozzá vagy a scriptek teljeskörű ismerete és egy kis kreativitás (pl. glitch effekt, szövegdoboz, szekresztéses képbeillesztés)
 
-- [Sorok elrejtése](hide-subtitles.md)
-- [Színkijelölés](color-picker.md)
-- [Transzformáció](transformations.md)
-- [Clippelés](vector-clip.md)
-- [Pipetta mód](clip-eyedropper.md)
-- [Maszkok](masks.md)
-- [Alakzatok rajzolása](shapes.md)
-- [Gradient](gradient.md)
-- [Szövegdoboz](text-box.md)
-- [Glitch effekt](glitch.md)
-- [Motion és Auto motion](motion.md)
-- [Képbeillesztés szerkesztéssel](image-editor.md)
-- [Vizuális eszközök](visual-tools.md)
-- [Képmaszkok és foldok](folds.md)
-- [Utolsó script](last-script.md)
+- **<ins>Sorok elrejtése</ins>**: videón megjelenő összes sor vagy csak maszkok elrejtése, áttetszőség állítása csak vízuálisan (pl. nem megjegyzésbe kerülnek a sorok) a videódoboz alatt, videóra kattintott jobbklikk menüben vagy `video/toggle_mask` és `video/toggle_subtitle` paranccsokkal
+- **<ins>Utolsó script</ins>**: korábbi script újrafuttatása az `Automatizáció → Utolsó script` menüponttal vagy `am/last` paranccsal, a hozzárendelt billentyű gyors kétszeri megnyomása listát nyit az utoljára használt scriptlehetőségekből
+- **<ins>Képmaszkok és foldok</ins>**: A beillesztett képek összevonva jelennek meg, melyet az egér görgő lenyomásával lehet ki-be nyitni. A működést a foldok is megkapták, ráadásul bármelyik sorra kattintva bezáródik. A képernyőn látható foldok ki vannak emelve, egyben lehet őket kijelölni (nyitó elemre CTRL lenyomása közben kattintással), másolni/beilleszteni másik feliratba, és nem esnek össze idővel. Valódi csoportként működnek most már.
+- [Színlevétel](color-picker.md): az egér pozíciójából egy kattintásos új színlevételi módszer
+- [Transzformációk](transformations.md): több sor szerkesztése egyszerre photoshophoz hasonló műveletekkel: `Szabad alakítás`, `Torzítás`, `Auto perspektíva`, `Ívelés`, `Hajlítás`, stb
+- [Clippelés](vector-clip.md): extra funkcionalitások a clippelésben
+- [Pipetta mód](clip-eyedropper.md): clip hozzáadása színtartomány szerint
+- [Maszkolás](masks.md): maszk létrehozás egyszerűbben, szövegeltávolítás AI-al
+- [Alakzatok rajzolása](shapes.md): paint szerű alakzat rajzolás + szabadkezű rajz
+- [Színátmenet](gradient.md): vizuális gradient létrehozás, ami egyszerre kezeli a karakterenkénti, elforgatott és radiális színátmeneteket + animáció lehetőség
+- [Szövegdoboz](text-box.md): képernyőn szerkeszthető szövegdoboz sorkizárt rendezéssel és sormagasság állítással
+- [Glitch effekt](glitch.md): különféle glitch effektek létrehozása vizuálisan + animáció lehetőség
+- [Motion és Auto motion](motion.md): újragondolt motion kezelés, mely egyszerre kezeli a perspektívát is (akár régi Mochával) és kényelmesebb használatot biztosít Mocha mellett + auto motion
+- [Képbeillesztés](image-insert.md): képek beillesztésének lehetősége (PNG-t is támogat áttetszőséggel) + photoshop szerű szerkesztés
+- [Vizuális eszközök](visual-tools.md): extra funkcionalitások a videódobozon megjelenő vizuális eszközökben
 
 ## Apróbb javítások
 
