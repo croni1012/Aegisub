@@ -28,7 +28,7 @@
 
 ## Formázóknak
 
-> Kifejezetten formázók számára fejlesztett kényelmi funkciók, hogy egy rész elkészítése könnyebb legyen, adott esetben akár jóval hatékonyabb is. Néhány funkció ezelőtt akár elérhetetlen is volt a kezdő formázók számára, mert akár programozói ismeretek voltak szükségesek hozzá vagy a scriptek teljeskörű ismerete és egy kis kreativitás (pl. glitch effekt, szövegdoboz, szekresztéses képbeillesztés)
+> Kifejezetten formázók számára fejlesztett kényelmi funkciók, hogy egy rész elkészítése könnyebb legyen, adott esetben akár jóval hatékonyabb is. Néhány funkció ezelőtt akár elérhetetlen is volt a kezdő formázók számára, mert akár programozói ismeretek voltak szükségesek hozzá vagy a scriptek teljeskörű ismerete és egy kis kreativitás (pl. glitch effekt, szövegdoboz, szekresztéses képbeillesztés). Néhány funkció külön oldalon van részletezve.
 
 - **<ins>Sorok elrejtése</ins>**: videón megjelenő összes sor vagy csak maszkok elrejtése, áttetszőség állítása csak vízuálisan (pl. nem megjegyzésbe kerülnek a sorok) a videódoboz alatt, videóra kattintott jobbklikk menüben vagy `video/toggle_mask` és `video/toggle_subtitle` paranccsokkal
 - **<ins>Utolsó script</ins>**: korábbi script újrafuttatása az `Automatizáció → Utolsó script` menüponttal vagy `am/last` paranccsal, a hozzárendelt billentyű gyors kétszeri megnyomása listát nyit az utoljára használt scriptlehetőségekből
