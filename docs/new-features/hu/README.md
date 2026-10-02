@@ -1,6 +1,12 @@
 [Magyar](README.md) | [English](../en/README.md)
 
-# Aegisub -- nyaa's edition: [szerezed be innen](https://github.com/croni1012/Aegisub/releases)
+# Aegisub -- nyaa's edition
+
+A projekt azért készült, hogy megkönnyítse a fansubbolást vagy akár olyan lehetőségeket biztosítson mindenki számára, amire addig nem volt igazán lehetőség vagy csak nagyon macerás kerülőúttal. Több fansubberrel egyűttműködve lettek megalkotva a funkciók, de aktív fejlesztés alatt áll, így érdemes figyelemmel követni.
+
+> Innen beszerezheted: [https://github.com/croni1012/Aegisub/releases](https://github.com/croni1012/Aegisub/releases)
+
+> Hibát találtál vagy ötleted volna? Írj egy issuet vagy bátran kereshetsz Discordon: [nyaa](https://discord.com/users/209700198350323715)
 
 ## Funkciók mindenkinek
 
