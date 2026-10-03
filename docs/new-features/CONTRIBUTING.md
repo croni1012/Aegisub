@@ -4,7 +4,7 @@ A dokumentációt a [GitHub Wikiben](https://github.com/croni1012/Aegisub/wiki) 
 
 A képek a Wiki `images` mappájában találhatók JPG-formátumban. A videók a meglévő külső tárhelyen maradnak; ne adj MP4-fájlokat a repóhoz. A régi PNG-k és leírások itt megmaradtak a korábbi hivatkozásokhoz.
 
-[Magyar dokumentáció](https://github.com/croni1012/Aegisub/wiki/Bevezet%C3%A9s)
+[Magyar dokumentáció](https://github.com/croni1012/Aegisub/wiki/Aegisub----nyaa%27s-edition----%C3%BAtmutat%C3%B3)
 
 Documentation is now maintained in the [GitHub Wiki](https://github.com/croni1012/Aegisub/wiki), in the separate `Aegisub.wiki.git` repository (local directory: `Aegisub-docs`). Make future documentation changes there.
 

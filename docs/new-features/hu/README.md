@@ -1,6 +1,6 @@
 [Magyar](README.md) | [English](../en/README.md)
 
-> A dokumentáció friss változata a [GitHub Wikiben](https://github.com/croni1012/Aegisub/wiki/Bevezet%C3%A9s) található.
+> A dokumentáció friss változata a [GitHub Wikiben](https://github.com/croni1012/Aegisub/wiki/Aegisub----nyaa%27s-edition----%C3%BAtmutat%C3%B3) található.
 
 # Aegisub -- nyaa's edition
 
