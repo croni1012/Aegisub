@@ -1,5 +1,7 @@
 [Magyar](README.md) | [English](../en/README.md)
 
+> A dokumentáció friss változata a [GitHub Wikiben](https://github.com/croni1012/Aegisub/wiki/HU-Home) található.
+
 # Aegisub -- nyaa's edition
 
 A projekt azért készült, hogy megkönnyítse a fansubbolást vagy akár olyan lehetőségeket biztosítson mindenki számára, amire addig nem volt igazán lehetőség vagy csak nagyon macerás kerülőúttal. Több fansubberrel egyűttműködve lettek megalkotva a funkciók, de aktív fejlesztés alatt áll, így érdemes figyelemmel követni.

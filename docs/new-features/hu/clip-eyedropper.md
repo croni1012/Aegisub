@@ -18,13 +18,13 @@ Az AI-alapú felismeréshez vagy eltávolításhoz Cloudinary-kapcsolat szüksé
 
 ### Pipetta és sablon bemutató
 
-[MP4 megnyitása / letöltése](../media/clip-pipette-and-template.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/clip-pipette-and-template.mp4)
 
 Színek hozzáadása, finomítás, mentés és visszatöltés.
 
 ### AI-alapú clipfelismerés
 
-[MP4 megnyitása / letöltése](../media/clip-ai-recognition.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/clip-ai-recognition.mp4)
 
 Karakterek és képrészletek automatikus kijelölése.
 

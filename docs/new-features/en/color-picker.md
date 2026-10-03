@@ -24,7 +24,7 @@ Opens a magnified picker, can create scene-aligned `\t(...)` tags, and can load 
 
 ### Color sampling demonstration
 
-[Open / download MP4](../media/color-picker.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/color-picker.mp4)
 
 Sampling, magnified view, and scene-aligned color transitions.
 

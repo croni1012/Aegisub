@@ -20,7 +20,7 @@ A Photoshop-like editor opens with the current video frame and each selected sub
 
 ### Image insertion with editing
 
-[Open / download MP4](../media/tpyesetting-image-insert-and-edit.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/tpyesetting-image-insert-and-edit.mp4)
 
 Edit the current frame and insert the result as an image mask.
 

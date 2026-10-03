@@ -22,13 +22,13 @@ Az Auto motion az alapvető mozgáskövetést egyszerűsíti, a Motion pedig tri
 
 ### Motion
 
-[MP4 megnyitása / letöltése](../media/typesetting-motion.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-motion.mp4)
 
 Motion használata a feliratok mozgásának követéséhez.
 
 ### Auto motion
 
-[MP4 megnyitása / letöltése](../media/typesetting-auto-motion.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-motion.mp4)
 
 Alapvető mozgáskövetés gyorsabban és egyszerűbben.
 

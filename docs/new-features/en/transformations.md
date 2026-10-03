@@ -42,43 +42,43 @@ Place selected lines in perspective using four points. It follows a customizable
 
 ### Free transform
 
-[Open / download MP4](../media/typesetting-free-transform.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-free-transform.mp4)
 
 Move, scale, rotate, and skew in the preview workspace.
 
 ### Free transform – additional example
 
-[Open / download MP4](../media/typesetting-free-transform2.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-free-transform2.mp4)
 
 Transforming a more complex subtitle in the preview workspace.
 
 ### Distort and perspective
 
-[Open / download MP4](../media/typesetting-distort.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-distort.mp4)
 
 Fit subtitle corners to a surface in perspective.
 
 ### Arch
 
-[Open / download MP4](../media/typesetting-arch.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-arch.mp4)
 
 Place subtitle text along an adjustable arc.
 
 ### Warp
 
-[Open / download MP4](../media/typesetting-warp.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-warp.mp4)
 
 Fit subtitle text to curved and uneven surfaces.
 
 ### Auto perspective – use case
 
-[Open / download MP4](../media/typesetting-auto-perspective-use-case.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-perspective-use-case.mp4)
 
 Place selected lines in perspective and fine-tune their position.
 
 ### Auto perspective
 
-[Open / download MP4](../media/typesetting-auto-perspective.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-perspective.mp4)
 
 Using four points and the yellow reference rectangle.
 

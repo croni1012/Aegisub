@@ -42,43 +42,43 @@ Saját visszavonás és újra lista.
 
 ### Szabad alakítás
 
-[MP4 megnyitása / letöltése](../media/typesetting-free-transform.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-free-transform.mp4)
 
 Mozgatás, méretezés, forgatás és döntés működés közben.
 
 ### Szabad alakítás – további példa
 
-[MP4 megnyitása / letöltése](../media/typesetting-free-transform2.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-free-transform2.mp4)
 
 Összetettebb feliratok átalakítása az előnézeti munkaterületen.
 
 ### Torzítás és perspektíva
 
-[MP4 megnyitása / letöltése](../media/typesetting-distort.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-distort.mp4)
 
 A felirat sarkainak perspektivikus felülethez igazítása.
 
 ### Ívelés
 
-[MP4 megnyitása / letöltése](../media/typesetting-arch.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-arch.mp4)
 
 Szöveg elhelyezése szabályozható ív mentén.
 
 ### Hajlítás
 
-[MP4 megnyitása / letöltése](../media/typesetting-warp.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-warp.mp4)
 
 Felirat illesztése görbült és egyenetlen felületekhez.
 
 ### Automatikus perspektíva – használati példa
 
-[MP4 megnyitása / letöltése](../media/typesetting-auto-perspective-use-case.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-perspective-use-case.mp4)
 
 Kijelölt sorok perspektívába helyezése és finomhangolása.
 
 ### Automatikus perspektíva
 
-[MP4 megnyitása / letöltése](../media/typesetting-auto-perspective.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-perspective.mp4)
 
 A négy pont és a sárga viszonyítási téglalap használata.
 

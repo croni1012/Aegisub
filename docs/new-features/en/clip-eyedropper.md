@@ -18,13 +18,13 @@ AI recognition or removal requires a Cloudinary connection. Check the provider f
 
 ### Pipette and template demonstration
 
-[Open / download MP4](../media/clip-pipette-and-template.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/clip-pipette-and-template.mp4)
 
 Add colors, refine the selection, save, and reload.
 
 ### AI clip recognition
 
-[Open / download MP4](../media/clip-ai-recognition.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/clip-ai-recognition.mp4)
 
 Automatically select characters and image regions.
 

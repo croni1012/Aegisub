@@ -27,7 +27,7 @@ Az AI-alapú felismeréshez vagy eltávolításhoz Cloudinary-kapcsolat szüksé
 
 ### AI-alapú szövegeltávolítás
 
-[MP4 megnyitása / letöltése](../media/ai-text-removal.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/ai-text-removal.mp4)
 
 Összetett képrészlet automatikus kitöltése és képmaszkként beillesztése.
 

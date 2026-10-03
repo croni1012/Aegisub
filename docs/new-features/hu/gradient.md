@@ -22,7 +22,7 @@ A Gradient funkcióval összetett színátmeneteket készíthetsz közvetlenül 
 
 ### Gradient animálással és mozgatással
 
-[MP4 megnyitása / letöltése](../media/typesetting-gradient-with-motion.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-gradient-with-motion.mp4)
 
 Színátmenet készítése, beállítása és mozgó effektként való használata.
 

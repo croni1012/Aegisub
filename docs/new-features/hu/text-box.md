@@ -22,7 +22,7 @@ A Szövegdoboz külön elemként jelenik meg, és a videón közvetlenül szerke
 
 ### Szövegdoboz bemutató
 
-[MP4 megnyitása / letöltése](../media/typesetting-textbox.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-textbox.mp4)
 
 Szövegdoboz létrehozása, formázása és elhelyezése a videón.
 

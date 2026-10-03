@@ -20,7 +20,7 @@ Photoshop-szerű szerkesztő nyílik meg az aktuális képkockával és a kijel�
 
 ### Képbeillesztés szerkesztéssel
 
-[MP4 megnyitása / letöltése](../media/tpyesetting-image-insert-and-edit.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/tpyesetting-image-insert-and-edit.mp4)
 
 Kép szerkesztése az aktuális képkockán, majd képmaszkként való beillesztése.
 

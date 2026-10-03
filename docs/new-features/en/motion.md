@@ -22,13 +22,13 @@ Auto motion simplifies basic tracking, while Motion adds trimming and built-in i
 
 ### Motion
 
-[Open / download MP4](../media/typesetting-motion.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-motion.mp4)
 
 Track subtitle movement with the Motion workflow.
 
 ### Auto motion
 
-[Open / download MP4](../media/typesetting-auto-motion.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-auto-motion.mp4)
 
 Handle basic motion tracking more quickly and comfortably.
 

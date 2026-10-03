@@ -24,7 +24,7 @@ Nagyított mintavételi nézetet nyit, jelenethez igazított `\t(...)` tagot ké
 
 ### Színkijelölés bemutató
 
-[MP4 megnyitása / letöltése](../media/color-picker.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/color-picker.mp4)
 
 Színmintavétel, nagyított nézet és jelenethez igazított színváltás.
 

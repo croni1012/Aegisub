@@ -22,7 +22,7 @@ Create complex color gradients directly from the Typesetting menu.
 
 ### Gradient with animation and motion
 
-[Open / download MP4](../media/typesetting-gradient-with-motion.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-gradient-with-motion.mp4)
 
 Create, adjust, animate, and move a gradient effect.
 

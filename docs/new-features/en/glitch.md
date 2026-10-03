@@ -19,7 +19,7 @@ Add several kinds of glitch effects, then copy or edit them later.
 
 ### Glitch effect demonstration
 
-[Open / download MP4](../media/typesetting-glitch-effect.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-glitch-effect.mp4)
 
 Add, edit, and animate a glitch effect.
 

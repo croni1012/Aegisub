@@ -19,7 +19,7 @@ Többféle glitch effektet adhatsz hozzá, amelyeket később is másolhatsz és
 
 ### Glitch effekt bemutató
 
-[MP4 megnyitása / letöltése](../media/typesetting-glitch-effect.mp4?raw=true)
+[MP4 megnyitása / letöltése](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-glitch-effect.mp4)
 
 Glitch effekt hozzáadása, szerkesztése és animálása.
 

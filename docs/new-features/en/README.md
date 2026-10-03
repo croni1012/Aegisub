@@ -1,5 +1,7 @@
 # Aegisub – new features
 
+> The current documentation is maintained in the [GitHub Wiki](https://github.com/croni1012/Aegisub/wiki/EN-Home).
+
 [Magyar](../hu/README.md) | [English](README.md)
 
 New and enhanced features covered by the original extended guide. Choose a menu or workspace, then follow a feature link.
@@ -89,6 +91,6 @@ New and enhanced features covered by the original extended guide. Choose a menu 
 
 ## Images and videos
 
-Screenshots appear in the descriptions. Use each page's **Open / download MP4** link for its videos. Media is stored in the repository's shared [media](../media/) directory; the interface language in screenshots and videos may differ from the page language.
+Screenshots appear in the descriptions. Use each page's **Open / download MP4** link for externally hosted videos. Legacy images remain in the repository's shared [media](../media/) directory; the interface language in screenshots and videos may differ from the page language.
 
 [Original guide](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/?lang=en) · [Releases](https://github.com/croni1012/Aegisub/releases)

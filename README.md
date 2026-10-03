@@ -1,6 +1,6 @@
 # Aegisub - nyaa's edition
 
-[New features – English](docs/new-features/en/README.md) | [Új funkciók – Magyar](docs/new-features/hu/README.md)
+[New features – English](https://github.com/croni1012/Aegisub/wiki/EN-Home) | [Új funkciók – Magyar](https://github.com/croni1012/Aegisub/wiki/HU-Home)
 
 Other information is on the main page.
 

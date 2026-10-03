@@ -27,7 +27,7 @@ AI recognition or removal requires a Cloudinary connection. Check the provider f
 
 ### AI text removal
 
-[Open / download MP4](../media/ai-text-removal.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/ai-text-removal.mp4)
 
 Automatically fill a complex image region and insert it as an image mask.
 

@@ -22,7 +22,7 @@ The Text box is a separate element that can be edited directly on the video.
 
 ### Text box demonstration
 
-[Open / download MP4](../media/typesetting-textbox.mp4?raw=true)
+[Open / download MP4](https://kintsugi-fansub.hu/public/nyaa/aegisub/docs/media/typesetting-textbox.mp4)
 
 Create, format, and position a text box directly on the video.
 
