@@ -1,6 +1,6 @@
 # Aegisub – new features
 
-> The current documentation is maintained in the [GitHub Wiki](https://github.com/croni1012/Aegisub/wiki/Introduction).
+> The current documentation is maintained in the [GitHub Wiki](https://github.com/croni1012/Aegisub/wiki/Home).
 
 [Magyar](../hu/README.md) | [English](README.md)
 
