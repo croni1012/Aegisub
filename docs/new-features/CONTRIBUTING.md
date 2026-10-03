@@ -10,4 +10,4 @@ Documentation is now maintained in the [GitHub Wiki](https://github.com/croni101
 
 JPG images live in the wiki's `images` directory. Videos remain on the existing external host; do not add MP4 files to this repository. Legacy PNGs and descriptions remain here for old links.
 
-[Editing guide](https://github.com/croni1012/Aegisub/wiki/Editing) · [English documentation](https://github.com/croni1012/Aegisub/wiki/)
+[Editing guide](https://github.com/croni1012/Aegisub/wiki/Editing) · [English documentation](https://github.com/croni1012/Aegisub/wiki/Introduction)
