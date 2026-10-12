@@ -7,7 +7,7 @@ Az `AI → AI-kapcsolat beállítása...` menüpontban lehet megadni a kapcsoló
 ## OpenAI
 
 Az OpenAI kapcsolathoz érvényes előfizetéssel rendelkező API kulcs szükséges, amit ideiglenesen és biztonságosan véglegesen is tárolhatsz a további műveletekhez.
-Létrehozáshoz viszont nem szükséges komplett előfizetés, elég csupán egyszer feltölteni kezdeti kerettel (jelenleg 10 EUR) és azt használja elfogyásig, aggódni pedig nem kell, mert bankkártya adatokat utána ki lehet törölni, hogy ne vonjon le semmit.
+Létrehozáshoz viszont nem szükséges komplett előfizetés, elég csupán egyszer feltölteni kezdeti kerettel (jelenleg 5 EUR) és azt használja elfogyásig, aggódni pedig nem kell, mert bankkártya adatokat utána ki lehet törölni, hogy ne vonjon le semmit.
 
 > Ez a model a szöveges funkciókhoz van főként.
 
