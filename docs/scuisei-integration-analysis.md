@@ -143,16 +143,15 @@ első és utolsó képkocka, VFR, több videosáv, 10 bites videó, Unicode fáj
 sérült bemenet, megszakítás, modális tiltás, projekt újranyitása,
 lista mentése és visszaállítása. Meglévő lista nem veszhet el sikertelen elemzéskor.
 
-## Beépített intelligens időzítő
+## Intelligens időzítés
 
-Az Időzítés menü harmadik eleme a **Kijelölt sorok intelligens javítása...**
-(`time/smart_fix`). A felhasználótól kapott `Dynamo.OkosIdozites (1).lua` 2.2.1
-időzítési algoritmusa az alábbi kiegészítésekkel a program erőforrásai közé kerül
-(`src/libresrc/smart_timing.lua`). Nem igényel telepített autoload scriptet;
-a korábbi `nyaa.fix-timing.lua` fájlt nem módosítja.
+Az Időzítés menü harmadik eleme a **Kijelölt sorok intelligens időzítése...**
+(`time/smart_fix`). A számítást a program natív C++ kódja végzi
+(`src/smart_timing.cpp`). Az időzítőhöz nem tartozik Automation script,
+beágyazott Lua-erőforrás vagy privát Lua API.
 
-A parancs megnyitott videót, érvényes időbélyegeket és legalább egy kijelölt,
-nem komment sort igényel. Meglévő betöltött kulcskockalistát használ. Ha nincs
+A parancs megnyitott videót, érvényes időbélyegeket és legalább egy kijelölt
+sort igényel. Meglévő betöltött kulcskockalistát használ. Ha nincs
 ilyen lista, vagy üres, először modális folyamatjelzővel jelenetfelismerést futtat; a videó
 saját kódolási I-kockái önmagukban nem számítanak betöltött jelenetlistának.
 A jelenetfelismerés megszakítása vagy hibája esetén az időzítő nem indul el.
@@ -164,18 +163,24 @@ Maga az időzítésjavítás beállítási és folyamatjelző ablak nélkül fut
 A végén egyetlen OK-gombos üzenet jelenik meg: „x sor időzítése javítva”.
 Csak a ténylegesen módosított időzítésű sorokat számolja, soronként egyszer;
 változatlan eredménynél nullát jelez. Megszakításkor nincs sikerüzenet.
-Az alapértékek csak az alsó
-beszédsorokat javítják, kihagyják a komplex/animált sorokat, védik a nem
-kijelölt szomszédokat, és figyelembe veszik a minimum időtartamot és a CPS-t.
-Az időzítő az Aegisub meglévő Automation tranzakcióját és visszavonását
-használja. A `dynamo.smart_timing` extradata-jelölő az ASS-be is elmenthető;
-az eredeti időkből való újraszámolás megakadályozza az ismételt eltolódást.
+Minden kijelölt sort feldolgoz, a felső igazítású, formázott, animált és
+komment sorokat is. A nem kijelölt sorokat nem veszi figyelembe:
+sem szomszédként, sem átfedési vagy hangigazítási korlátként.
+A minimum időtartam és a CPS-védelem továbbra is érvényes.
+Az időzítő az Aegisub szokásos időzítésmódosítását és visszavonását
+használja, **Intelligens időzítés** néven. Minden futtatás az aktuális
+soridőkből számol, és kizárólag a kezdési és befejezési időket módosítja.
+Nem tárol külön időzítőállapotot, és nem olvas vagy ír időzítő-extradatát.
+Megnyitáskor nincs adatátemelés, mentéskor nincs időzítőszűrés; a korábbi
+extradata-bejegyzések változatlanul megmaradnak. Videónyitáskor továbbra is
+automatikusan betöltődik a videóhoz megtalált, érvényes kulcskockalista.
+Újrafuttatva is az aktuális idők a kiindulópontok;
+a korábbi időzítés a szokásos visszavonással állítható vissza.
 
-A beágyazott Lua-állapotot a natív parancs birtokolja; minden indítás friss
-alapértékekkel fut. A szerkesztés a feldolgozás végéig tiltott, de az alkalmazás
-eseménykezelése tovább működik. Makrói privát tulajdonban vannak:
-nem kerülnek be az Automation menübe vagy a legutóbbi makrók listájába,
-és az autoload scriptek újratöltése nem törli őket.
+A számítás nem módosítja a feliratot; sikeres befejezése után a natív
+parancs egyetlen visszavonható lépésben alkalmazza az új időket.
+A szerkesztés a feldolgozás végéig tiltott, de az alkalmazás
+eseménykezelése tovább működik.
 
 A sorvég előrenyújtásának alapértelmezett határa 750 ms, a folytonosság
 összeköthető résének határa 800 ms, a határértékeket is beleértve. A rés
@@ -184,10 +189,9 @@ A 2.2.1-es változat a frissen összekötött sorok közös határát is ellenő
 az előrenyújtást az eredeti sorvégtől, a következő sor késését annak eredeti
 kezdetétől méri. Az alkalmazható visszavágás elsőbbséget élvez, a korábbi
 vágás védőablaka pedig külön 100 ms marad. A már KF-en végződő sorra a korábbi
-beépített megőrzési védelem is érvényes; az igazítás nem léphet át a nem
-kijelölt következő sor kezdetén. Írás előtt újabb megszakításellenőrzés fut.
-A beágyazott változat azonosítója `2.2.1-kintsugi.6`; a külső Lua-fájlok
-nem módosulnak.
+beépített megőrzési védelem is érvényes; az igazítás a kijelölt
+következő sor kezdetét veszi figyelembe. Írás előtt újabb
+megszakításellenőrzés fut. A külső Lua-fájlok nem módosulnak.
 
 A Szereplő/Név mező alapján az egymásra beszélő, különböző nevű szereplők
 azonos rétegen és igazításon belül külön belső beszédsávba kerülnek. Anna
@@ -211,9 +215,8 @@ együtt a véggel, ha az olvashatósági és eredeti átfedési védelmek megeng
 
 Három vagy több szereplőnél a teljes végidőtartomány férjen a keretbe:
 3,0 / 3,7 / 4,4 másodperces végekből nem készül egy 1,4 másodperces
-láncolt hosszabbítás. A beszédsávokat a mentett eredeti időkből építi fel;
-a szereplőnév is része a változásellenőrzésnek, így az újrafuttatás stabil,
-átnevezéskor pedig újraszámol. A közös végekre igazított csoportok száma
+láncolt hosszabbítás. A beszédsávokat az adott futtatás kezdetén érvényes
+időkből és szereplőnevekből építi fel. A közös végekre igazított csoportok száma
 belső statisztikában is szerepel; a befejező üzenet csak a módosított sorok számát mutatja.
 
 Az eredeti integráció kilenc célzott tesztje ellenőrzi a rés- és átfedéskezelést, a KF-igazítás

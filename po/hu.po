@@ -12101,16 +12101,20 @@ msgid "Could not generate keyframes: "
 msgstr "Nem sikerült előállítani a kulcskockákat: "
 
 #: ../src/command/time.cpp
-msgid "Intelligently Fix Selected Lines..."
-msgstr "Kijelölt sorok intelligens javítása..."
+msgid "Smart Timing"
+msgstr "Intelligens időzítés"
 
 #: ../src/command/time.cpp
-msgid "Intelligently Fix Selected Lines"
-msgstr "Kijelölt sorok intelligens javítása"
+msgid "Smart Timing for Selected Lines..."
+msgstr "Kijelölt sorok intelligens időzítése..."
 
 #: ../src/command/time.cpp
-msgid "Load scene keyframes if needed and intelligently fix the timing of selected lines"
-msgstr "Jelenetváltási kulcskockák betöltése szükség esetén és a kijelölt sorok időzítésének intelligens javítása"
+msgid "Smart Timing for Selected Lines"
+msgstr "Kijelölt sorok intelligens időzítése"
+
+#: ../src/command/time.cpp
+msgid "Apply Smart Timing to selected lines, loading scene keyframes if needed"
+msgstr "Intelligens időzítés alkalmazása a kijelölt sorokra, szükség esetén a jelenetváltási kulcskockák betöltésével"
 
 #: ../src/command/time.cpp
 #, c-format

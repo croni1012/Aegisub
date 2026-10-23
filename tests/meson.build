@@ -32,7 +32,6 @@ tests_src = [
     'tests/karaoke_matcher.cpp',
     'tests/keyframe.cpp',
     'tests/scuisei.cpp',
-    'tests/smart_timing.cpp',
     'tests/line_iterator.cpp',
     'tests/line_wrap.cpp',
     'tests/lua_script_reader.cpp',
@@ -54,7 +53,6 @@ tests_src = [
 tests_inc = include_directories('support')
 
 tests_args = ['-DAUTOMATION_TEST_INCLUDE_DIR="' + meson.project_source_root() / 'automation/include' + '"']
-tests_args += ['-DSMART_TIMING_TEST_SCRIPT_PATH="' + meson.project_source_root() / 'src/libresrc/smart_timing.lua' + '"']
 
 # force UTF8 for MSVC
 if host_machine.system() == 'windows'

@@ -37,6 +37,7 @@ aegisub_src = files(
     'base_grid.cpp',
     'charset_detect.cpp',
     'keyframe_generation.cpp',
+    'smart_timing.cpp',
     'colorspace.cpp',
     'colour_button.cpp',
     'command/app.cpp',
