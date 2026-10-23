@@ -131,6 +131,7 @@ class AIReviewDialog final : public wxDialog {
 	std::vector<SubtitleTiming> subtitle_timings;
 	std::vector<ai::SubtitleLine> input_lines;
 	agi::fs::path audio_file;
+	ai::ReviewLanguages const languages = ai::GetReviewLanguages();
 	std::shared_ptr<ReviewRequestState> request_state = std::make_shared<ReviewRequestState>();
 
 	wxStaticText *status;
@@ -316,15 +317,19 @@ class AIReviewDialog final : public wxDialog {
 			top->Add(play);
 			line_box->Add(top, wxSizerFlags().Expand().Border(wxALL, 6));
 
-			AddSection(line_box, line_parent, _("Current subtitle"), to_wx(input.current_text));
-			AddSection(line_box, line_parent, _("English source"), to_wx(input.source_text));
+			AddSection(line_box, line_parent, fmt_tl("Current subtitle (%s)",
+				wxGetTranslation(to_wx(languages.check))), to_wx(input.current_text));
+			AddSection(line_box, line_parent, fmt_tl("Source line (%s)",
+				wxGetTranslation(to_wx(languages.source))), to_wx(input.source_text));
 
-			wxString japanese = review ? to_wx(review->japanese) : wxString{};
-			if (review && !review->romaji.empty()) {
-				if (!japanese.empty()) japanese += "\n";
-				japanese += _("Romaji: ") + to_wx(review->romaji);
+			wxString transcript = review ? to_wx(review->transcript) : wxString{};
+			if (review && !review->romanization.empty()) {
+				if (!transcript.empty()) transcript += "\n";
+				transcript += (languages.audio == "Japanese" ? _("Romaji: ") : _("Romanization: "))
+					+ to_wx(review->romanization);
 			}
-			AddSection(line_box, line_parent, _("Japanese / Romaji"), japanese);
+			AddSection(line_box, line_parent, fmt_tl("Audio transcript (%s)",
+				wxGetTranslation(to_wx(languages.audio))), transcript);
 
 			if (review) {
 				AddSection(line_box, line_parent, _("Assessment"), to_wx(review->assessment));
@@ -350,7 +355,8 @@ class AIReviewDialog final : public wxDialog {
 
 	void StartInitialRequest() {
 		request_state->cancelled.store(false);
-		SetBusy(true, _("Transcribing the Japanese audio and reviewing the subtitles..."));
+		SetBusy(true, fmt_tl("Transcribing audio (%s) and reviewing the subtitles...",
+			wxGetTranslation(to_wx(languages.audio))));
 		auto key = ApiKey();
 		auto model = Model();
 		auto transcription_model = TranscriptionModel();
@@ -360,12 +366,12 @@ class AIReviewDialog final : public wxDialog {
 
 		agi::dispatch::Background().Async([state = std::move(state), key = std::move(key), model = std::move(model),
 			transcription_model = std::move(transcription_model),
-			audio = std::move(audio), lines = std::move(lines)]() mutable {
+			audio = std::move(audio), lines = std::move(lines), languages = languages]() mutable {
 			auto outcome = std::make_shared<RequestOutcome>();
 			outcome->initial = true;
 			try {
 				ai::OpenAIClient client(std::move(key), std::move(model),
-					std::move(transcription_model), {}, &state->cancelled);
+					std::move(transcription_model), {}, &state->cancelled, languages);
 				auto transcript = client.Transcribe(audio);
 				if (state->cancelled.load()) throw ai::Error("A kérés megszakítva.");
 				outcome->result = client.Review(lines, transcript);
@@ -394,11 +400,11 @@ class AIReviewDialog final : public wxDialog {
 
 		agi::dispatch::Background().Async([state = std::move(state), key = std::move(key), model = std::move(model),
 			transcription_model = std::move(transcription_model),
-			previous = std::move(previous), message = std::move(message)]() mutable {
+			previous = std::move(previous), message = std::move(message), languages = languages]() mutable {
 			auto outcome = std::make_shared<RequestOutcome>();
 			try {
 				ai::OpenAIClient client(std::move(key), std::move(model),
-					std::move(transcription_model), {}, &state->cancelled);
+					std::move(transcription_model), {}, &state->cancelled, languages);
 				outcome->result = client.Continue(previous, message);
 			}
 			catch (std::exception const& error) {
@@ -485,6 +491,13 @@ public:
 		stop_audio_button = new wxButton(this, wxID_ANY, _("Stop playback"));
 		header->Add(stop_audio_button, wxSizerFlags().CenterVertical().Border(wxLEFT, 8));
 		main->Add(header, wxSizerFlags().Expand().Border(wxALL, 12));
+		auto language_summary = new wxStaticText(this, wxID_ANY,
+			fmt_tl("Check language: %s\nSource-line language: %s\nAudio language: %s",
+				wxGetTranslation(to_wx(languages.check)), wxGetTranslation(to_wx(languages.source)),
+				wxGetTranslation(to_wx(languages.audio))) + "\n" +
+			_("You can change these languages in Preferences, under General > AI, for the next check."));
+		language_summary->Wrap(FromDIP(700));
+		main->Add(language_summary, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 12));
 
 		auto status_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Request status"));
 		auto status_row = new wxBoxSizer(wxHORIZONTAL);

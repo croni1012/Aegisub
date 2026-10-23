@@ -99,7 +99,9 @@
 
 
 	"AI" : {
+		"Audio Language" : "",
 		"Check Language" : "",
+		"Source Language" : "",
 		"Cloudinary" : {
 			"API Key" : "",
 			"Cloud Name" : ""

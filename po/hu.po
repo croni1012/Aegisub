@@ -8317,6 +8317,147 @@ msgstr "Visszavonási szint"
 msgid "Language checked by AI review and post-check"
 msgstr "Az AI ellenőrzés és utóellenőrzés nyelve"
 
+msgid "Check language"
+msgstr "Ellenőrzés nyelve"
+
+msgid "Source-line language"
+msgstr "Forrássor nyelve"
+
+msgid "Audio language"
+msgstr "Hang nyelve"
+
+msgid "Which language are the source lines written in?\n\nThis is shared by AI review and post-check. You can change it later in Preferences, under General."
+msgstr "Milyen nyelven íródtak a forrássorok?\n\nAz AI-ellenőrzés és az utóellenőrzés közösen használja ezt a beállítást. Később a Beállítások Általános lapján módosíthatod."
+
+msgid "Which language is spoken in the audio used for AI review?\n\nYou can change this later in Preferences, under General."
+msgstr "Milyen nyelven beszélnek az AI-ellenőrzéshez használt hangban?\n\nEzt később a Beállítások Általános lapján módosíthatod."
+
+msgid "Check up to 100 lines and two minutes of subtitles against audio and any available source lines in the configured languages"
+msgstr "Legfeljebb 100 sor és két percnyi felirat ellenőrzése a hang és az elérhető forrássorok alapján, a beállított nyelveken"
+
+#, c-format
+msgid "Current subtitle (%s)"
+msgstr "Jelenlegi feliratszöveg (%s)"
+
+#, c-format
+msgid "Source line (%s)"
+msgstr "Forrássor (%s)"
+
+#, c-format
+msgid "Audio transcript (%s)"
+msgstr "A hang átirata (%s)"
+
+msgid "Romanization: "
+msgstr "Latin betűs átírás: "
+
+#, c-format
+msgid "Transcribing audio (%s) and reviewing the subtitles..."
+msgstr "A hang átírása (%s) és a feliratok ellenőrzése…"
+
+#, c-format
+msgid "Check language: %s\nSource-line language: %s\nAudio language: %s"
+msgstr "Ellenőrzés nyelve: %s\nForrássor nyelve: %s\nHang nyelve: %s"
+
+#, c-format
+msgid "Check language: %s\nSource-line language: %s"
+msgstr "Ellenőrzés nyelve: %s\nForrássor nyelve: %s"
+
+msgid "You can change these languages in Preferences, under General > AI, for the next check."
+msgstr "A következő ellenőrzéshez a Beállítások > Általános > AI résznél módosíthatod ezeket a nyelveket."
+
+msgid "Bulgarian"
+msgstr "Bolgár"
+
+msgid "Chinese"
+msgstr "Kínai"
+
+msgid "Croatian"
+msgstr "Horvát"
+
+msgid "Czech"
+msgstr "Cseh"
+
+msgid "Danish"
+msgstr "Dán"
+
+msgid "Dutch"
+msgstr "Holland"
+
+msgid "English"
+msgstr "Angol"
+
+msgid "Estonian"
+msgstr "Észt"
+
+msgid "Finnish"
+msgstr "Finn"
+
+msgid "French"
+msgstr "Francia"
+
+msgid "German"
+msgstr "Német"
+
+msgid "Hindi"
+msgstr "Hindi"
+
+msgid "Hungarian"
+msgstr "Magyar"
+
+msgid "Indonesian"
+msgstr "Indonéz"
+
+msgid "Italian"
+msgstr "Olasz"
+
+msgid "Japanese"
+msgstr "Japán"
+
+msgid "Korean"
+msgstr "Koreai"
+
+msgid "Latvian"
+msgstr "Lett"
+
+msgid "Lithuanian"
+msgstr "Litván"
+
+msgid "Norwegian"
+msgstr "Norvég"
+
+msgid "Polish"
+msgstr "Lengyel"
+
+msgid "Portuguese"
+msgstr "Portugál"
+
+msgid "Portuguese (Brazilian)"
+msgstr "Portugál (brazíliai)"
+
+msgid "Romanian"
+msgstr "Román"
+
+msgid "Serbian"
+msgstr "Szerb"
+
+msgid "Slovak"
+msgstr "Szlovák"
+
+msgid "Slovenian"
+msgstr "Szlovén"
+
+msgid "Spanish"
+msgstr "Spanyol"
+
+msgid "Spanish (Latin American)"
+msgstr "Spanyol (latin-amerikai)"
+
+msgid "Swedish"
+msgstr "Svéd"
+
+msgid "Ukrainian"
+msgstr "Ukrán"
+
 #: ../src/preferences.cpp:88
 msgid "Recently Used Lists"
 msgstr "Mostanában megnyitott listák elemei"

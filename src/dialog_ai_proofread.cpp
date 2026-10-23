@@ -57,6 +57,7 @@ constexpr int decision_skipped = -2;
 
 struct ProofreadSession {
 	agi::Context const *context = nullptr;
+	ai::ReviewLanguages languages;
 	ai::ProofreadResult result;
 	std::vector<ai::SubtitleLine> context_lines;
 	std::vector<int> decisions;
@@ -82,8 +83,10 @@ bool latest_session_applies_to(agi::Context const *context) {
 }
 
 void remember_session(agi::Context const *context, ai::ProofreadResult const& result,
-	std::vector<ai::SubtitleLine> const& context_lines, std::vector<int> const& decisions) {
+	std::vector<ai::SubtitleLine> const& context_lines, std::vector<int> const& decisions,
+	ai::ReviewLanguages const& languages) {
 	latest_session.context = context;
+	latest_session.languages = languages;
 	latest_session.result = result;
 	latest_session.context_lines = context_lines;
 	latest_session.decisions = decisions;
@@ -249,6 +252,7 @@ std::string corrected_effect(std::string const& original, ai::ProofreadIssue con
 
 class AIProofreadDialog final : public wxDialog {
 	agi::Context *context;
+	ai::ReviewLanguages const languages;
 	std::vector<AssDialogue *> target_lines;
 	std::vector<ai::SubtitleLine> context_lines;
 	std::unordered_map<int, AssDialogue *> line_by_id;
@@ -374,8 +378,8 @@ class AIProofreadDialog final : public wxDialog {
 		back_button->Hide();
 		cancel_button->SetLabel(_("Cancel request"));
 		cancel_button->Show();
-		SetMinSize(FromDIP(wxSize(560, 185)));
-		SetSize(FromDIP(wxSize(680, 195)));
+		SetMinSize(FromDIP(wxSize(680, 280)));
+		SetSize(FromDIP(wxSize(740, 290)));
 		CenterOnParent();
 		Layout();
 
@@ -389,7 +393,7 @@ class AIProofreadDialog final : public wxDialog {
 			auto outcome = std::make_shared<ProofreadOutcome>();
 			try {
 				ai::OpenAIClient client(std::move(key), std::move(model),
-					std::move(transcription_model), {}, &cancelled);
+					std::move(transcription_model), {}, &cancelled, languages);
 				outcome->result = client.Proofread(lines);
 			}
 			catch (std::exception const& error) {
@@ -469,7 +473,7 @@ class AIProofreadDialog final : public wxDialog {
 		UpdateCategorySummary();
 		decisions.assign(result.issues.size(), decision_pending);
 		initial_decisions = decisions;
-		remember_session(context, result, context_lines, decisions);
+		remember_session(context, result, context_lines, decisions, languages);
 
 		if (result.issues.empty()) {
 			progress->SetRange(1);
@@ -629,7 +633,7 @@ class AIProofreadDialog final : public wxDialog {
 		if (accepted > 0)
 			context->ass->Commit(_("apply AI post-check corrections"),
 				AssFile::COMMIT_DIAG_TEXT | AssFile::COMMIT_DIAG_META);
-		remember_session(context, result, context_lines, decisions);
+		remember_session(context, result, context_lines, decisions, languages);
 		EndModal(wxID_OK);
 	}
 
@@ -644,7 +648,7 @@ class AIProofreadDialog final : public wxDialog {
 			}
 		}
 		decisions = initial_decisions;
-		remember_session(context, result, context_lines, decisions);
+		remember_session(context, result, context_lines, decisions, languages);
 		reviewing = false;
 		EndModal(wxID_CANCEL);
 	}
@@ -676,11 +680,12 @@ class AIProofreadDialog final : public wxDialog {
 
 public:
 	AIProofreadDialog(agi::Context *context, std::vector<AssDialogue *> target_lines,
-		std::vector<ai::SubtitleLine> context_lines, bool replaying = false,
+		std::vector<ai::SubtitleLine> context_lines, ai::ReviewLanguages languages, bool replaying = false,
 		ai::ProofreadResult replay_result = {}, std::vector<int> replay_decisions = {})
 	: wxDialog(context->parent, wxID_ANY, _("AI post-check"), wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 	, context(context)
+	, languages(std::move(languages))
 	, target_lines(std::move(target_lines))
 	, context_lines(std::move(context_lines))
 	, pulse_timer(this)
@@ -700,16 +705,18 @@ public:
 
 		auto main = new wxBoxSizer(wxVERTICAL);
 		auto analysis = new wxBoxSizer(wxVERTICAL);
-		// Name the language being checked, since it is now configurable.
-		auto language = ai::GetCheckLanguage();
-		auto title = new wxStaticText(this, wxID_ANY, language.empty() ?
-			_("Subtitle post-check") :
-			agi::wxformat(_("%s subtitle post-check"), to_wx(language)));
+		auto title = new wxStaticText(this, wxID_ANY, _("Subtitle post-check"));
 		auto title_font = title->GetFont();
 		title_font.SetWeight(wxFONTWEIGHT_BOLD);
 		title_font.SetPointSize(title_font.GetPointSize() + 2);
 		title->SetFont(title_font);
 		analysis->Add(title, wxSizerFlags().Border(wxBOTTOM, 6));
+		auto language_summary = new wxStaticText(this, wxID_ANY,
+			fmt_tl("Check language: %s\nSource-line language: %s",
+				wxGetTranslation(to_wx(this->languages.check)), wxGetTranslation(to_wx(this->languages.source)))
+			+ "\n" + _("You can change these languages in Preferences, under General > AI, for the next check."));
+		language_summary->Wrap(FromDIP(620));
+		analysis->Add(language_summary, wxSizerFlags().Expand().Border(wxBOTTOM, 6));
 
 		status = new wxStaticText(this, wxID_ANY, _("Preparing AI analysis..."));
 		analysis->Add(status, wxSizerFlags().Expand().Border(wxBOTTOM, 6));
@@ -745,11 +752,13 @@ public:
 		review->Add(explanation, wxSizerFlags().Expand().Border(wxBOTTOM, 8));
 
 		auto texts = new wxBoxSizer(wxHORIZONTAL);
-		auto current_box = new wxStaticBoxSizer(wxVERTICAL, review_panel, _("Current subtitle"));
+		auto current_box = new wxStaticBoxSizer(wxVERTICAL, review_panel,
+			fmt_tl("Current subtitle (%s)", wxGetTranslation(to_wx(this->languages.check))));
 		current_text = make_readonly(current_box->GetStaticBox(), 82);
 		current_box->Add(current_text, wxSizerFlags(1).Expand().Border(wxALL, 5));
 		texts->Add(current_box, wxSizerFlags(1).Expand().Border(wxRIGHT, 5));
-		auto source_box = new wxStaticBoxSizer(wxVERTICAL, review_panel, _("Source line"));
+		auto source_box = new wxStaticBoxSizer(wxVERTICAL, review_panel,
+			fmt_tl("Source line (%s)", wxGetTranslation(to_wx(this->languages.source))));
 		source_text = make_readonly(source_box->GetStaticBox(), 82);
 		source_box->Add(source_text, wxSizerFlags(1).Expand().Border(wxALL, 5));
 		texts->Add(source_box, wxSizerFlags(1).Expand().Border(wxLEFT, 5));
@@ -784,8 +793,8 @@ public:
 		skip_all_button->Hide();
 		back_button->Hide();
 		SetSizer(main);
-		SetSize(FromDIP(wxSize(680, 195)));
-		SetMinSize(FromDIP(wxSize(560, 185)));
+		SetSize(FromDIP(wxSize(740, 290)));
+		SetMinSize(FromDIP(wxSize(680, 280)));
 		CenterOnParent();
 
 		Bind(EVT_AI_PROOFREAD_DONE, &AIProofreadDialog::OnRequestDone, this);
@@ -823,7 +832,7 @@ public:
 void ShowAIProofreadDialog(agi::Context *context,
 	std::vector<AssDialogue *> target_lines,
 	std::vector<ai::SubtitleLine> context_lines) {
-	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines));
+	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines), ai::GetReviewLanguages());
 	dialog.ShowModal();
 }
 
@@ -855,7 +864,7 @@ void ShowLatestAIProofreadDialog(agi::Context *context) {
 		cached.ass_text = line->Text.get();
 	}
 
-	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines), true,
+	AIProofreadDialog dialog(context, std::move(target_lines), std::move(context_lines), latest_session.languages, true,
 		latest_session.result, latest_session.decisions);
 	dialog.ShowModal();
 }

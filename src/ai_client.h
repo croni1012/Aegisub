@@ -90,8 +90,8 @@ struct KaraokeResult {
 
 struct LineReview {
 	int id = 0;
-	std::string japanese;
-	std::string romaji;
+	std::string transcript;
+	std::string romanization;
 	std::string verdict;
 	std::string assessment;
 	std::vector<std::string> issues;
@@ -109,17 +109,27 @@ struct ReviewResult {
 /// The API base URL used when nothing is configured.
 std::string DefaultApiBase();
 
+/// Canonical English language names, snapshotted for a complete review session.
+struct ReviewLanguages {
+	std::string check = "Hungarian";
+	std::string source = "English";
+	std::string audio = "Japanese";
+};
+
+ReviewLanguages GetReviewLanguages();
+
 class OpenAIClient final {
 	std::string api_key;
 	std::string model;
 	std::string transcription_model;
 	std::string custom_instructions;
 	std::atomic_bool *cancelled = nullptr;
+	ReviewLanguages languages;
 
 public:
 	OpenAIClient(std::string api_key, std::string model,
 		std::string transcription_model, std::string custom_instructions = {},
-		std::atomic_bool *cancelled = nullptr);
+		std::atomic_bool *cancelled = nullptr, ReviewLanguages languages = {});
 
 	/// Test the connection against the given base URL. An empty value means
 	/// DefaultApiBase().
@@ -131,7 +141,7 @@ public:
 		TimedTranscript const& transcript, bool advanced_timing) const;
 	KaraokeResult CreateKanji(std::vector<KaraokeInputLine> const& lines) const;
 	ReviewResult Review(std::vector<SubtitleLine> const& lines,
-		std::string const& japanese_transcript) const;
+		std::string const& audio_transcript) const;
 	ReviewResult Continue(ReviewResult const& previous,
 		std::string const& user_message) const;
 	ProofreadResult Proofread(std::vector<SubtitleLine> const& lines) const;

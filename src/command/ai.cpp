@@ -54,26 +54,39 @@ struct TemporaryFile final {
 	}
 };
 
-/// Ask which language the review and the post-check should work in, once, and
-/// remember the answer. Both commands need it before they can build their prompts.
-bool EnsureCheckLanguage(wxWindow *parent) {
-	if (!ai::GetCheckLanguage().empty()) return true;
+/// An empty option means that this language has not been chosen yet.
+bool EnsureLanguage(wxWindow *parent, char const *option, std::string const& default_language,
+	wxString const& title, wxString const& message) {
+	if (!OPT_GET(option)->GetString().empty()) return true;
 	auto languages = ai::CheckLanguageChoices();
 	wxArrayString choices;
 	choices.reserve(languages.size());
-	for (auto const& language : languages) choices.push_back(to_wx(language));
-	auto found = std::find(languages.begin(), languages.end(), std::string("English"));
+	for (auto const& language : languages) choices.push_back(wxGetTranslation(to_wx(language)));
+	auto found = std::find(languages.begin(), languages.end(), default_language);
 	int preselect = found == languages.end() ? 0 :
 		static_cast<int>(std::distance(languages.begin(), found));
-	wxSingleChoiceDialog dialog(parent,
-		_("Which language are the subtitles you are checking written in?\n\nYou can change this later in Preferences, under General."),
-		_("AI check language"), choices);
+	wxSingleChoiceDialog dialog(parent, message, title, choices);
 	dialog.SetSelection(preselect);
 	if (dialog.ShowModal() != wxID_OK) return false;
 	int selected = dialog.GetSelection();
 	if (selected < 0 || selected >= static_cast<int>(languages.size())) return false;
-	ai::SetCheckLanguage(languages[selected]);
+	OPT_SET(option)->SetString(languages[selected]);
 	return true;
+}
+
+bool EnsureCheckLanguage(wxWindow *parent) {
+	return EnsureLanguage(parent, "AI/Check Language", "English", _("Check language"),
+		_("Which language are the subtitles you are checking written in?\n\nYou can change this later in Preferences, under General."));
+}
+
+bool EnsureSourceLanguage(wxWindow *parent) {
+	return EnsureLanguage(parent, "AI/Source Language", "English", _("Source-line language"),
+		_("Which language are the source lines written in?\n\nThis is shared by AI review and post-check. You can change it later in Preferences, under General."));
+}
+
+bool EnsureAudioLanguage(wxWindow *parent) {
+	return EnsureLanguage(parent, "AI/Audio Language", "Japanese", _("Audio language"),
+		_("Which language is spoken in the audio used for AI review?\n\nYou can change this later in Preferences, under General."));
 }
 
 struct ai_configure final : public cmd::Command {
@@ -91,7 +104,7 @@ struct ai_review final : public cmd::Command {
 	CMD_NAME("ai/review")
 	STR_MENU("Review selected lines with AI...")
 	STR_DISP("Review selected lines with AI")
-	STR_HELP("Check up to 100 lines and two minutes of subtitles against Japanese audio and any available source lines")
+	STR_HELP("Check up to 100 lines and two minutes of subtitles against audio and any available source lines in the configured languages")
 	CMD_TYPE(cmd::COMMAND_VALIDATE)
 
 	bool Validate(agi::Context const *c) override {
@@ -102,6 +115,8 @@ struct ai_review final : public cmd::Command {
 		if (ai::GetApiKey().empty() && !ShowAIConnectionDialog(c->parent, true))
 			return;
 		if (!EnsureCheckLanguage(c->parent)) return;
+		if (!EnsureSourceLanguage(c->parent)) return;
+		if (!EnsureAudioLanguage(c->parent)) return;
 
 		auto lines = c->selectionController->GetSortedSelection();
 		if (lines.empty() || !c->project->AudioProvider()) return;
@@ -202,6 +217,7 @@ struct ai_proofread final : public cmd::Command {
 		if (ai::GetApiKey().empty() && !ShowAIConnectionDialog(c->parent, true))
 			return;
 		if (!EnsureCheckLanguage(c->parent)) return;
+		if (!EnsureSourceLanguage(c->parent)) return;
 
 		auto selected = c->selectionController->GetSortedSelection();
 		bool use_selection = selected.size() >= 100;

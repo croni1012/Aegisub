@@ -82,8 +82,18 @@ void General(wxTreebook *book, Preferences *parent) {
 	wxArrayString check_languages;
 	for (auto const& language : ai::CheckLanguageChoices())
 		check_languages.push_back(to_wx(language));
-	p->OptionChoice(ai_general, _("Language checked by AI review and post-check"),
-		check_languages, "AI/Check Language");
+	// Show the first-use default when an option has not been chosen yet.
+	check_languages.Remove("English");
+	check_languages.Insert("English", 0);
+	p->OptionChoice(ai_general, _("Check language"),
+		check_languages, "AI/Check Language", true);
+	p->OptionChoice(ai_general, _("Source-line language"),
+		check_languages, "AI/Source Language", true);
+	auto audio_languages = check_languages;
+	audio_languages.Remove("Japanese");
+	audio_languages.Insert("Japanese", 0);
+	p->OptionChoice(ai_general, _("Audio language"),
+		audio_languages, "AI/Audio Language", true);
 
 	auto recent = p->PageSizer(_("Recently Used Lists"));
 	p->OptionAdd(recent, _("Files"), "Limits/MRU", 0, 16);

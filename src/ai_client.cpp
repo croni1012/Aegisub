@@ -40,6 +40,58 @@ namespace {
 
 constexpr char default_api_base[] = "https://api.openai.com/v1";
 
+struct LanguageChoice {
+	char const *name;
+	char const *code;
+};
+
+LanguageChoice const language_choices[] = {
+	{wxTRANSLATE("Arabic"), "ar"},
+	{wxTRANSLATE("Bulgarian"), "bg"},
+	{wxTRANSLATE("Chinese"), "zh"},
+	{wxTRANSLATE("Croatian"), "hr"},
+	{wxTRANSLATE("Czech"), "cs"},
+	{wxTRANSLATE("Danish"), "da"},
+	{wxTRANSLATE("Dutch"), "nl"},
+	{wxTRANSLATE("English"), "en"},
+	{wxTRANSLATE("Estonian"), "et"},
+	{wxTRANSLATE("Finnish"), "fi"},
+	{wxTRANSLATE("French"), "fr"},
+	{wxTRANSLATE("German"), "de"},
+	{wxTRANSLATE("Greek"), "el"},
+	{wxTRANSLATE("Hebrew"), "he"},
+	{wxTRANSLATE("Hindi"), "hi"},
+	{wxTRANSLATE("Hungarian"), "hu"},
+	{wxTRANSLATE("Indonesian"), "id"},
+	{wxTRANSLATE("Italian"), "it"},
+	{wxTRANSLATE("Japanese"), "ja"},
+	{wxTRANSLATE("Korean"), "ko"},
+	{wxTRANSLATE("Latvian"), "lv"},
+	{wxTRANSLATE("Lithuanian"), "lt"},
+	{wxTRANSLATE("Norwegian"), "no"},
+	{wxTRANSLATE("Polish"), "pl"},
+	{wxTRANSLATE("Portuguese"), "pt"},
+	{wxTRANSLATE("Portuguese (Brazilian)"), "pt"},
+	{wxTRANSLATE("Romanian"), "ro"},
+	{wxTRANSLATE("Russian"), "ru"},
+	{wxTRANSLATE("Serbian"), "sr"},
+	{wxTRANSLATE("Slovak"), "sk"},
+	{wxTRANSLATE("Slovenian"), "sl"},
+	{wxTRANSLATE("Spanish"), "es"},
+	{wxTRANSLATE("Spanish (Latin American)"), "es"},
+	{wxTRANSLATE("Swedish"), "sv"},
+	{wxTRANSLATE("Thai"), "th"},
+	{wxTRANSLATE("Turkish"), "tr"},
+	{wxTRANSLATE("Ukrainian"), "uk"},
+	{wxTRANSLATE("Vietnamese"), "vi"},
+};
+
+std::string language_code(std::string const& language) {
+	for (auto const& choice : language_choices)
+		if (language == choice.name) return choice.code;
+	throw Error("Unknown AI audio language: " + language);
+}
+
 bool has_scheme(std::string const& url, char const *scheme) {
 	auto const length = std::strlen(scheme);
 	return url.size() >= length &&
@@ -265,8 +317,8 @@ json::Object type_schema(char const *type) {
 json::Object line_schema() {
 	json::Object properties;
 	properties["line_id"] = type_schema("integer");
-	properties["japanese"] = type_schema("string");
-	properties["romaji"] = type_schema("string");
+	properties["transcript"] = type_schema("string");
+	properties["romanization"] = type_schema("string");
 	json::Object verdict;
 	verdict["type"] = "string";
 	json::Array verdict_values;
@@ -284,7 +336,7 @@ json::Object line_schema() {
 	properties["issues"] = std::move(issues);
 
 	json::Array required;
-	for (auto name : {"line_id", "japanese", "romaji", "verdict", "assessment", "issues", "suggested_text"})
+	for (auto name : {"line_id", "transcript", "romanization", "verdict", "assessment", "issues", "suggested_text"})
 		required.emplace_back(name);
 
 	json::Object schema;
@@ -532,18 +584,14 @@ std::string karaoke_instructions(KaraokeMode mode, bool advanced_timing) {
 		"chunks. Do not rewrite the line.";
 }
 
-std::string checked_language() {
-	auto language = GetCheckLanguage();
-	return language.empty() ? "Hungarian" : language;
-}
-
-std::string instructions(std::string const& custom) {
-	std::string language = checked_language();
+std::string instructions(std::string const& custom, ReviewLanguages const& languages) {
+	auto const& language = languages.check;
 	std::string prompt =
 		"You are a professional audiovisual subtitle quality reviewer. Audit the "
 		"supplied existing " + language + " subtitle text; do not translate from scratch "
 		"when the current subtitle is already correct. Compare current_text against "
-		"the authoritative Japanese transcript and use source_reference as a secondary aid. "
+		"the authoritative " + languages.audio + " audio transcript and use the "
+		+ languages.source + " source_reference as a secondary aid. "
 		"Check meaning, omissions, additions, tone, natural " + language + " wording, grammar, "
 		"and continuity across the scene. The input lines are ordered and belong to "
 		"one continuous scene. Input lines are compact arrays in the exact order declared "
@@ -552,17 +600,19 @@ std::string instructions(std::string const& custom) {
 		"must be one short " + language + " sentence and issues must contain at most three short "
 		+ language + " items. suggested_text must be "
 		"empty when no change is needed; otherwise it must contain one corrected, plain "
-		+ language + " subtitle without ASS tags or literal newlines. japanese should contain "
-		"the Japanese words assigned to the line, and romaji an easy-to-read Hepburn "
-		"romanization. During follow-up chat, answer only the user's new question in "
+		+ language + " subtitle without ASS tags or literal newlines. transcript should contain "
+		"the original " + languages.audio + " words assigned to the line. romanization should "
+		"contain an easy-to-read Latin transliteration when the audio language uses a non-Latin "
+		"script (Hepburn for Japanese), otherwise an empty string. Do not translate the transcript "
+		"or romanization into another language. During follow-up chat, answer only the user's new question in "
 		+ language + ". Do not repeat the per-line review unless explicitly asked.";
 	if (!custom.empty())
 		prompt += " Additional user review rules: " + custom;
 	return prompt;
 }
 
-std::string proofread_instructions(std::string const& custom) {
-	std::string language = checked_language();
+std::string proofread_instructions(std::string const& custom, ReviewLanguages const& languages) {
+	auto const& language = languages.check;
 	std::string prompt =
 		"You are a meticulous " + language + " subtitle proofreader. Review only input lines "
 		"where target is 1, and use every supplied line in the chronologically ordered "
@@ -572,7 +622,7 @@ std::string proofread_instructions(std::string const& custom) {
 		"punctuation errors, grammar, awkward or unclear wording in context, repeated words "
 		"or phrases, and terminology/name/spelling consistency across the entire subtitle. "
 		"Do not flag high CPS, reading speed, line length or subtitle duration issues. "
-		"Treat source_line as a semantic reference: flag a contextually wrong but correctly "
+		"Treat source_line as a " + languages.source + " semantic reference: flag a contextually wrong but correctly "
 		"spelled word of the target language when the source makes the "
 		"mistake clear. Never propose a fresh translation merely because source_line differs. "
 		"Editorial notes intentionally left in the subtitle are allowed. Never flag the presence, "
@@ -632,8 +682,8 @@ ReviewResult parse_review(std::string const& output_text,
 		auto const& line = static_cast<json::Object const&>(value);
 		LineReview review;
 		review.id = static_cast<int>(static_cast<json::Integer const&>(line.at("line_id")));
-		review.japanese = string_field(line, "japanese");
-		review.romaji = string_field(line, "romaji");
+		review.transcript = string_field(line, "transcript");
+		review.romanization = string_field(line, "romanization");
 		review.verdict = string_field(line, "verdict");
 		review.assessment = string_field(line, "assessment");
 		review.suggested_text = string_field(line, "suggested_text");
@@ -770,7 +820,7 @@ std::string post_json(std::string const& key, std::string const& endpoint,
 ReviewResult structured_request(std::string const& key,
 	std::string const& model, std::string const& custom_instructions,
 	std::string history_json, std::string const& user_message,
-	std::atomic_bool *cancelled, bool include_line_reviews) {
+	std::atomic_bool *cancelled, bool include_line_reviews, ReviewLanguages const& languages) {
 	auto history_root = parse_json(history_json);
 	auto history = std::move(static_cast<json::Array&>(history_root));
 	history.emplace_back(message_item("user", user_message));
@@ -796,7 +846,7 @@ ReviewResult structured_request(std::string const& key,
 
 	json::Object request;
 	request["model"] = model;
-	request["instructions"] = instructions(custom_instructions);
+	request["instructions"] = instructions(custom_instructions, languages);
 	request["input"] = std::move(request_history);
 	request["text"] = std::move(text);
 	request["reasoning"] = std::move(reasoning);
@@ -816,7 +866,7 @@ ReviewResult structured_request(std::string const& key,
 
 ProofreadResult proofread_request(std::string const& key,
 	std::string const& model, std::string const& custom_instructions,
-	std::string const& user_message, std::atomic_bool *cancelled) {
+	std::string const& user_message, std::atomic_bool *cancelled, ReviewLanguages const& languages) {
 	json::Array input;
 	input.emplace_back(message_item("user", user_message));
 
@@ -835,7 +885,7 @@ ProofreadResult proofread_request(std::string const& key,
 
 	json::Object request;
 	request["model"] = model;
-	request["instructions"] = proofread_instructions(custom_instructions);
+	request["instructions"] = proofread_instructions(custom_instructions, languages);
 	request["input"] = std::move(input);
 	request["text"] = std::move(text);
 	request["reasoning"] = std::move(reasoning);
@@ -998,12 +1048,13 @@ std::string DefaultApiBase() {
 
 OpenAIClient::OpenAIClient(std::string api_key, std::string model,
 	std::string transcription_model, std::string custom_instructions,
-	std::atomic_bool *cancelled)
+	std::atomic_bool *cancelled, ReviewLanguages languages)
 : api_key(std::move(api_key))
 , model(std::move(model))
 , transcription_model(std::move(transcription_model))
 , custom_instructions(std::move(custom_instructions))
-, cancelled(cancelled) {
+, cancelled(cancelled)
+, languages(std::move(languages)) {
 	if (this->api_key.empty()) throw Error("Nincs beállítva OpenAI API-kulcs.");
 	if (this->model.empty()) throw Error("Nincs beállítva ellenőrzési modell.");
 	if (this->transcription_model.empty()) throw Error("Nincs beállítva beszédfelismerési modell.");
@@ -1024,6 +1075,7 @@ void OpenAIClient::TestConnection(std::string const& base_url) const {
 }
 
 std::string OpenAIClient::Transcribe(agi::fs::path const& audio_file) const {
+	auto const audio_language_code = language_code(languages.audio);
 	CurlHandle curl;
 	std::string response;
 	configure_common(curl, api_key, &response, cancelled);
@@ -1041,7 +1093,7 @@ std::string OpenAIClient::Transcribe(agi::fs::path const& audio_file) const {
 
 	add_text("model", transcription_model);
 	add_text("response_format", "json");
-	add_text("language", "ja");
+	add_text("language", audio_language_code);
 	auto file_part = curl_mime_addpart(mime);
 	curl_mime_name(file_part, "file");
 	curl_mime_filedata(file_part, audio_file.string().c_str());
@@ -1345,7 +1397,7 @@ KaraokeResult OpenAIClient::CreateKanji(std::vector<KaraokeInputLine> const& lin
 }
 
 ReviewResult OpenAIClient::Review(std::vector<SubtitleLine> const& lines,
-	std::string const& japanese_transcript) const {
+	std::string const& audio_transcript) const {
 	json::Array input_lines;
 	for (auto const& line : lines) {
 		json::Array row;
@@ -1357,8 +1409,10 @@ ReviewResult OpenAIClient::Review(std::vector<SubtitleLine> const& lines,
 	}
 
 	json::Object context;
-	context["japanese_transcript"] = japanese_transcript;
-	context["review_language"] = checked_language();
+	context["audio_transcript"] = audio_transcript;
+	context["audio_language"] = languages.audio;
+	context["source_language"] = languages.source;
+	context["review_language"] = languages.check;
 	context["task"] = "quality_review_existing_subtitles";
 	json::Array columns;
 	for (auto name : {"line_id", "source_reference", "current_text", "actor"})
@@ -1366,20 +1420,20 @@ ReviewResult OpenAIClient::Review(std::vector<SubtitleLine> const& lines,
 	context["columns"] = std::move(columns);
 	context["lines"] = std::move(input_lines);
 	return structured_request(api_key, model, custom_instructions, "[]",
-		write_json(context), cancelled, true);
+		write_json(context), cancelled, true, languages);
 }
 
 ReviewResult OpenAIClient::Continue(ReviewResult const& previous,
 	std::string const& user_message) const {
 	if (user_message.empty()) throw Error("A chatüzenet nem lehet üres.");
 	auto result = structured_request(api_key, model, custom_instructions,
-		previous.conversation_json, user_message, cancelled, false);
+		previous.conversation_json, user_message, cancelled, false, languages);
 	result.lines = previous.lines;
 	return result;
 }
 
 ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) const {
-	auto make_context = [](std::vector<SubtitleLine const *> const& batch) {
+	auto make_context = [this](std::vector<SubtitleLine const *> const& batch) {
 		json::Array input_lines;
 		for (auto line : batch) {
 			json::Array row;
@@ -1392,7 +1446,8 @@ ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) 
 		}
 
 		json::Object context;
-		context["language"] = checked_language();
+		context["language"] = languages.check;
+		context["source_language"] = languages.source;
 		context["task"] = "subtitle_proofread";
 		json::Array columns;
 		for (auto name : {"line_id", "target", "source_line", "ass_text", "actor"})
@@ -1412,7 +1467,7 @@ ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) 
 		if (message.size() > proofread_max_input_chars)
 			throw Error("Az AI-utóellenőrzés egyik feliratsora túl hosszú a feldolgozáshoz.");
 		auto part = proofread_request(api_key, model, custom_instructions,
-			message, cancelled);
+			message, cancelled, languages);
 		if (request_count++ == 0)
 			combined.message = std::move(part.message);
 		combined.issues.insert(combined.issues.end(),
@@ -1453,15 +1508,20 @@ void SetCheckLanguage(std::string language) {
 }
 
 std::vector<std::string> CheckLanguageChoices() {
-	// English names on purpose: the review and proofread prompts name the language
-	// to the model, and an English name is what it reliably understands.
-	return {"Arabic", "Bulgarian", "Chinese (Simplified)", "Chinese (Traditional)",
-		"Croatian", "Czech", "Danish", "Dutch", "English", "Estonian", "Finnish",
-		"French", "German", "Greek", "Hebrew", "Hindi", "Hungarian", "Indonesian",
-		"Italian", "Japanese", "Korean", "Latvian", "Lithuanian", "Norwegian",
-		"Polish", "Portuguese", "Portuguese (Brazilian)", "Romanian", "Russian",
-		"Serbian", "Slovak", "Slovenian", "Spanish", "Spanish (Latin American)",
-		"Swedish", "Thai", "Turkish", "Ukrainian", "Vietnamese"};
+	std::vector<std::string> choices;
+	for (auto const& language : language_choices) choices.emplace_back(language.name);
+	return choices;
+}
+
+ReviewLanguages GetReviewLanguages() {
+	ReviewLanguages languages;
+	auto check = GetCheckLanguage();
+	auto source = OPT_GET("AI/Source Language")->GetString();
+	auto audio = OPT_GET("AI/Audio Language")->GetString();
+	if (!check.empty()) languages.check = std::move(check);
+	if (!source.empty()) languages.source = std::move(source);
+	if (!audio.empty()) languages.audio = std::move(audio);
+	return languages;
 }
 
 std::string GetApiKey() {
