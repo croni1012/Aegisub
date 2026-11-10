@@ -5,14 +5,19 @@
 
 #include "format.h"
 #include "options.h"
+#include "version.h"
 
 #include <libaegisub/cajun/elements.h>
 #include <libaegisub/cajun/reader.h>
 #include <libaegisub/cajun/writer.h>
+#include <libaegisub/path.h>
 
 #include <curl/curl.h>
 
 #include <wx/base64.h>
+#include <wx/datetime.h>
+#include <wx/file.h>
+#include <wx/utils.h>
 
 #include <algorithm>
 #include <cctype>
@@ -127,6 +132,10 @@ std::string api_base() {
 
 constexpr size_t proofread_max_input_chars = 900000;
 constexpr size_t proofread_max_lines_per_request = 300;
+constexpr int proofread_max_output_tokens = 16000;
+// TEMPORARY: retain complete response bodies while investigating oversized output.
+// Disable this after the investigation; responses can contain subtitle text.
+constexpr bool proofread_log_full_response = true;
 #ifdef _WIN32
 constexpr wchar_t credential_target[] = L"MutekiAegisub/AI/OpenAI/default";
 constexpr wchar_t cloudinary_credential_target[] = L"MutekiAegisub/AI/Cloudinary/default";
@@ -273,21 +282,218 @@ std::string api_error(std::string const& response, long status) {
 	return agi::format("Az OpenAI API HTTP %d hibával válaszolt.", status);
 }
 
+// Each flushed line is one JSON object, so an interrupted run still leaves a
+// usable .log file. Full response capture is temporarily enabled above. Request
+// headers and prompts are never logged, and the configured API key is redacted.
+class ProofreadLog final {
+	wxFile file;
+	std::string const& key;
+	std::string *output_path;
+	std::atomic_bool *cancelled;
+	std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
+	int request_number = 0;
+	bool completed = false;
+
+	static std::string identifier(std::string value) {
+		if (value.size() > 128 || value.find_first_not_of(
+			"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-") != std::string::npos)
+			return {};
+		return value;
+	}
+	static json::Object const *object_field(json::Object const& object, char const *name) {
+		auto it = object.find(name);
+		if (it == object.end()) return nullptr;
+		try { return &static_cast<json::Object const&>(it->second); }
+		catch (json::Exception const&) { return nullptr; }
+	}
+	static void number(json::Object& fields, char const *label,
+		json::Object const *object, char const *name) {
+		if (!object) return;
+		auto it = object->find(name);
+		if (it == object->end()) return;
+		try { fields[label] = static_cast<json::Integer const&>(it->second); }
+		catch (json::Exception const&) { }
+	}
+
+public:
+	ProofreadLog(std::string const& model, size_t line_count, std::string const& key,
+		std::string *output_path, std::atomic_bool *cancelled)
+	: key(key), output_path(output_path), cancelled(cancelled) {
+		if (output_path) output_path->clear();
+		try {
+			if (!config::path) return;
+			auto directory = config::path->Decode("?user/log/");
+			agi::fs::CreateDirectory(directory);
+			static std::atomic_uint serial{0};
+			auto stamp = wxDateTime::UNow().ToUTC().Format("%Y%m%d-%H%M%S-%l");
+			auto path = directory / agi::format("ai-postcheck-%s-%d-%d.log",
+				stamp, wxGetProcessId(), ++serial);
+			if (!file.Create(wxString::FromUTF8(path.string()), false)) return;
+			if (output_path) *output_path = path.string();
+			json::Object fields;
+			fields["format_version"] = 2;
+			fields["full_response_logging"] = proofread_log_full_response;
+			fields["aegisub_version"] = GetAegisubShortVersionString();
+			fields["model"] = identifier(model);
+			fields["line_count"] = static_cast<int64_t>(line_count);
+			fields["max_output_tokens"] = proofread_max_output_tokens;
+			Event("session_started", std::move(fields));
+		}
+		catch (...) {
+			if (output_path) output_path->clear();
+			file.Close();
+		}
+	}
+	~ProofreadLog() {
+		Event(completed ? "session_completed" :
+			(cancelled && cancelled->load() ? "session_cancelled" : "session_failed"));
+	}
+	void Completed() { completed = true; }
+	void Event(char const *event, json::Object fields = {}) noexcept {
+		if (!file.IsOpened()) return;
+		try {
+			fields["event"] = event;
+			fields["timestamp_utc"] = std::string(wxDateTime::UNow().ToUTC().Format("%Y-%m-%dT%H:%M:%S.%lZ").utf8_str());
+			fields["elapsed_ms"] = static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now() - started).count());
+			fields["request"] = request_number;
+			auto entry = write_json(fields);
+			// The writer escapes whitespace inside strings; remove only its indentation.
+			entry.erase(std::remove_if(entry.begin(), entry.end(), [](char c) {
+				return c == '\n' || c == '\r' || c == '\t';
+			}), entry.end());
+			for (size_t pos = 0; !key.empty() && (pos = entry.find(key, pos)) != std::string::npos; pos += 10)
+				entry.replace(pos, key.size(), "[redacted]");
+			entry += '\n';
+			if (file.Write(entry.data(), entry.size()) != entry.size() || !file.Flush()) {
+				if (output_path) output_path->clear();
+				file.Close();
+			}
+		}
+		catch (...) {
+			if (output_path) output_path->clear();
+			file.Close();
+		}
+	}
+	void Request(size_t context_count, size_t target_count, size_t input_bytes) {
+		++request_number;
+		json::Object fields;
+		fields["context_lines"] = static_cast<int64_t>(context_count);
+		fields["target_lines"] = static_cast<int64_t>(target_count);
+		fields["input_bytes"] = static_cast<int64_t>(input_bytes);
+		Event("request_started", std::move(fields));
+	}
+	void Transfer(CURL *curl, CURLcode result, long status, size_t bytes, std::string const& request_id) {
+		double duration = 0;
+		curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &duration);
+		json::Object fields;
+		fields["http_status"] = static_cast<int64_t>(status);
+		fields["curl_code"] = static_cast<int>(result);
+		fields["curl_result"] = curl_easy_strerror(result);
+		fields["duration_ms"] = static_cast<int64_t>(duration * 1000);
+		fields["response_bytes"] = static_cast<int64_t>(bytes);
+		fields["request_id"] = identifier(request_id);
+		Event("http_finished", std::move(fields));
+	}
+	void Response(std::string const& response) noexcept {
+		if (!file.IsOpened()) return;
+		try {
+			if (proofread_log_full_response) {
+				// Save before parsing: malformed and truncated bodies are the evidence
+				// needed here. Event() escapes the body and removes the API key.
+				json::Object body;
+				body["body"] = response;
+				Event("response_body", std::move(body));
+			}
+			auto value = parse_json(response);
+			auto const& root = static_cast<json::Object const&>(value);
+			json::Object fields;
+			for (auto name : {"id", "status", "model"})
+				fields[name] = identifier(string_field(root, name));
+			if (auto details = object_field(root, "incomplete_details"))
+				fields["incomplete_reason"] = identifier(string_field(*details, "reason"));
+			if (auto error = object_field(root, "error")) {
+				fields["error_type"] = identifier(string_field(*error, "type"));
+				fields["error_code"] = identifier(string_field(*error, "code"));
+			}
+			auto usage = object_field(root, "usage");
+			for (auto name : {"input_tokens", "output_tokens", "total_tokens"})
+				number(fields, name, usage, name);
+			if (usage) {
+				number(fields, "reasoning_tokens", object_field(*usage, "output_tokens_details"), "reasoning_tokens");
+				number(fields, "cached_input_tokens", object_field(*usage, "input_tokens_details"), "cached_tokens");
+			}
+			Event("response_metadata", std::move(fields));
+		}
+		catch (json::Exception const& error) { JsonError(error, "response_json"); }
+		catch (...) { Event("response_metadata_unavailable"); }
+	}
+	void JsonError(json::Exception const& error, char const *stage) {
+		json::Object fields;
+		fields["stage"] = stage;
+		std::string message = error.what();
+		fields["error_kind"] = (message == "Unexpected end of token stream" || message == "Unexpected End of token stream")
+			? "unexpected_end_of_token_stream" : "invalid_json";
+		// Parser messages may quote subtitle content, so retain only classification
+		// and position, never the arbitrary message or the offending token.
+		json::Reader::Location const *location = nullptr;
+		if (auto parse = dynamic_cast<json::Reader::ParseException const *>(&error))
+			location = &parse->m_locTokenBegin;
+		if (auto scan = dynamic_cast<json::Reader::ScanException const *>(&error))
+			location = &scan->m_locError;
+		if (location) {
+			fields["offset"] = static_cast<int64_t>(location->m_nDocOffset);
+			fields["line"] = static_cast<int64_t>(location->m_nLine);
+			fields["column"] = static_cast<int64_t>(location->m_nLineOffset);
+		}
+		Event("json_error", std::move(fields));
+	}
+};
+
+size_t capture_request_id(char *data, size_t size, size_t count, void *target) noexcept {
+	auto bytes = size * count;
+	try {
+		std::string header(data, bytes);
+		auto& request_id = *static_cast<std::string *>(target);
+		if (header.compare(0, 5, "HTTP/") == 0) request_id.clear();
+		auto colon = header.find(':');
+		if (colon == std::string::npos) return bytes;
+		auto name = header.substr(0, colon);
+		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+		if (name == "x-request-id") {
+			auto first = header.find_first_not_of(" \t", colon + 1);
+			if (first != std::string::npos)
+				request_id = header.substr(first, header.find_last_not_of(" \t\r\n") - first + 1);
+		}
+	}
+	catch (...) { }
+	return bytes;
+}
+
 std::string perform(CURL *curl, CurlHeaders const& headers,
-	std::atomic_bool *cancelled) {
+	std::atomic_bool *cancelled, ProofreadLog *log = nullptr) {
 	std::string response;
+	std::string request_id;
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, static_cast<curl_slist *>(headers));
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, append_response);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+	if (log) {
+		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, capture_request_id);
+		curl_easy_setopt(curl, CURLOPT_HEADERDATA, &request_id);
+	}
 
 	auto result = curl_easy_perform(curl);
+	long status = 0;
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+	if (log) {
+		log->Transfer(curl, result, status, response.size(), request_id);
+		log->Response(response);
+	}
 	if (result == CURLE_ABORTED_BY_CALLBACK && cancelled && cancelled->load())
 		throw Error("A kérés megszakítva.");
 	if (result != CURLE_OK)
 		throw Error(agi::format("Hálózati hiba: %s", curl_easy_strerror(result)));
 
-	long status = 0;
-	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
 	if (status < 200 || status >= 300)
 		throw Error(api_error(response, status));
 	return response;
@@ -614,7 +820,11 @@ std::string instructions(std::string const& custom, ReviewLanguages const& langu
 std::string proofread_instructions(std::string const& custom, ReviewLanguages const& languages) {
 	auto const& language = languages.check;
 	std::string prompt =
-		"You are a meticulous " + language + " subtitle proofreader. Review only input lines "
+		"You are a meticulous " + language + " subtitle proofreader. "
+		"Return exactly one complete JSON object matching the supplied schema, serialized on one line. "
+		"Outside JSON strings, emit no whitespace: no spaces, tabs, line breaks, indentation or blank lines. "
+		"Preserve the meaningful spaces and ASS controls inside subtitle strings, using proper JSON escaping. "
+		"Review only input lines "
 		"where target is 1, and use every supplied line in the chronologically ordered "
 		"batch as context. Return one combined issue object per flawed "
 		"target line and no object for correct lines. Keep false positives very low for "
@@ -636,8 +846,13 @@ std::string proofread_instructions(std::string const& custom, ReviewLanguages co
 		"If categories is exactly [spelling] and the issue is only a clear typo, one strong "
 		"suggestion is sufficient. For every other issue return exactly three genuinely useful, "
 		"meaning-preserving alternatives, ordered best first. Do not return duplicate alternatives. "
+		"Always include both required top-level fields: issues and message. "
+		"When there are findings, message must be an empty string. "
 		"If there are no findings, return an empty issues array and a short "
-		+ language + " message.";
+		+ language + " message. Immediately after the closing bracket of issues, emit the comma, "
+		"the message field and the final closing brace. Do not insert whitespace or padding between "
+		"these fields. Finish all required fields and close the JSON object before ending the response. "
+		"Stop immediately after the final closing brace, with no trailing whitespace or additional text.";
 	if (!custom.empty())
 		prompt += " Additional user review rules: " + custom;
 	return prompt;
@@ -805,7 +1020,7 @@ std::string append_response_items(std::string const& history_json,
 }
 
 std::string post_json(std::string const& key, std::string const& endpoint,
-	std::string const& body, std::atomic_bool *cancelled) {
+	std::string const& body, std::atomic_bool *cancelled, ProofreadLog *log = nullptr) {
 	CurlHandle curl;
 	std::string response;
 	configure_common(curl, key, &response, cancelled);
@@ -814,7 +1029,7 @@ std::string post_json(std::string const& key, std::string const& endpoint,
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.data());
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(body.size()));
 	auto headers = authenticated_headers(key, true);
-	return perform(curl, headers, cancelled);
+	return perform(curl, headers, cancelled, log);
 }
 
 ReviewResult structured_request(std::string const& key,
@@ -866,7 +1081,8 @@ ReviewResult structured_request(std::string const& key,
 
 ProofreadResult proofread_request(std::string const& key,
 	std::string const& model, std::string const& custom_instructions,
-	std::string const& user_message, std::atomic_bool *cancelled, ReviewLanguages const& languages) {
+	std::string const& user_message, std::atomic_bool *cancelled, ReviewLanguages const& languages,
+	ProofreadLog& log) {
 	json::Array input;
 	input.emplace_back(message_item("user", user_message));
 
@@ -890,13 +1106,41 @@ ProofreadResult proofread_request(std::string const& key,
 	request["text"] = std::move(text);
 	request["reasoning"] = std::move(reasoning);
 	request["store"] = false;
-	request["max_output_tokens"] = 16000;
+	request["max_output_tokens"] = proofread_max_output_tokens;
 
-	auto response_text = post_json(key, api_base() + "/responses",
-		write_json(request), cancelled);
-	auto response_root_value = parse_json(response_text);
-	auto const& response_root = static_cast<json::Object const&>(response_root_value);
-	return parse_proofread(extract_output_text(response_root));
+	char const *stage = "http_request";
+	try {
+		auto response_text = post_json(key, api_base() + "/responses",
+			write_json(request), cancelled, &log);
+		stage = "response_json";
+		auto response_root_value = parse_json(response_text);
+		auto const& response_root = static_cast<json::Object const&>(response_root_value);
+		stage = "output_text";
+		auto output_text = extract_output_text(response_root);
+		json::Object fields;
+		fields["output_text_bytes"] = static_cast<int64_t>(output_text.size());
+		log.Event("output_received", std::move(fields));
+		stage = "review_json";
+		auto result = parse_proofread(output_text);
+		json::Object success;
+		success["issues"] = static_cast<int64_t>(result.issues.size());
+		log.Event("request_completed", std::move(success));
+		return result;
+	}
+	catch (json::Exception const& error) {
+		log.JsonError(error, stage);
+		throw;
+	}
+	catch (std::out_of_range const&) {
+		log.Event("missing_review_field");
+		throw;
+	}
+	catch (std::exception const&) {
+		json::Object fields;
+		fields["stage"] = stage;
+		log.Event("request_failed", std::move(fields));
+		throw;
+	}
 }
 
 std::string read_environment_key() {
@@ -1432,7 +1676,9 @@ ReviewResult OpenAIClient::Continue(ReviewResult const& previous,
 	return result;
 }
 
-ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) const {
+ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines,
+	std::string *diagnostic_log_path) const {
+	ProofreadLog log(model, lines.size(), api_key, diagnostic_log_path, cancelled);
 	auto make_context = [this](std::vector<SubtitleLine const *> const& batch) {
 		json::Array input_lines;
 		for (auto line : batch) {
@@ -1466,8 +1712,10 @@ ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) 
 		auto message = make_context(batch);
 		if (message.size() > proofread_max_input_chars)
 			throw Error("Az AI-utóellenőrzés egyik feliratsora túl hosszú a feldolgozáshoz.");
+		log.Request(batch.size(), std::count_if(batch.begin(), batch.end(),
+			[](SubtitleLine const *line) { return line->target; }), message.size());
 		auto part = proofread_request(api_key, model, custom_instructions,
-			message, cancelled, languages);
+			message, cancelled, languages, log);
 		if (request_count++ == 0)
 			combined.message = std::move(part.message);
 		combined.issues.insert(combined.issues.end(),
@@ -1496,6 +1744,7 @@ ProofreadResult OpenAIClient::Proofread(std::vector<SubtitleLine> const& lines) 
 	send_batch();
 	if (request_count > 1)
 		combined.message.clear();
+	log.Completed();
 	return combined;
 }
 

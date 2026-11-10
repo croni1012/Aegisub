@@ -144,7 +144,11 @@ public:
 		std::string const& audio_transcript) const;
 	ReviewResult Continue(ReviewResult const& previous,
 		std::string const& user_message) const;
-	ProofreadResult Proofread(std::vector<SubtitleLine> const& lines) const;
+	/// Write a diagnostic log in ?user/log, temporarily including full AI responses.
+	/// It can contain subtitle text; the API key is redacted. The optional path is
+	/// empty if logging could not be completed; logging never prevents a request.
+	ProofreadResult Proofread(std::vector<SubtitleLine> const& lines,
+		std::string *diagnostic_log_path = nullptr) const;
 };
 
 /// Edit an image with a transparent PNG mask and return the base64-encoded PNG.

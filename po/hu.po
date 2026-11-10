@@ -12309,6 +12309,15 @@ msgstr "Hanghoz igazítás kihagyva: nincs betöltött hang."
 msgid "Lines with corrected timing: %d"
 msgstr "%d sor időzítése javítva"
 
+#: ../src/dialog_ai_proofread.cpp
+msgid "The diagnostic log could not be saved in the log folder."
+msgstr "Nem sikerült menteni a diagnosztikai naplót a log mappába."
+
+#: ../src/dialog_ai_proofread.cpp
+#, c-format
+msgid "Diagnostic log saved to:\n%s\n\n"
+msgstr "Diagnosztikai napló mentve ide:\n%s\n\n"
+
 #: ../src/auto4_lua.cpp
 msgid "Done"
 msgstr "Kész"

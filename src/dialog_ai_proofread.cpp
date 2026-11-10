@@ -49,6 +49,7 @@ wxDEFINE_EVENT(EVT_AI_PROOFREAD_DONE, wxThreadEvent);
 struct ProofreadOutcome {
 	bool cancelled = false;
 	std::string error;
+	std::string diagnostic_log_path;
 	ai::ProofreadResult result;
 };
 
@@ -394,7 +395,7 @@ class AIProofreadDialog final : public wxDialog {
 			try {
 				ai::OpenAIClient client(std::move(key), std::move(model),
 					std::move(transcription_model), {}, &cancelled, languages);
-				outcome->result = client.Proofread(lines);
+				outcome->result = client.Proofread(lines, &outcome->diagnostic_log_path);
 			}
 			catch (std::exception const& error) {
 				outcome->cancelled = cancelled.load();
@@ -445,9 +446,16 @@ class AIProofreadDialog final : public wxDialog {
 			return;
 		}
 		if (!outcome->error.empty()) {
-			if (!outcome->cancelled)
-				wxMessageBox(to_wx(outcome->error), _("AI post-check failed"),
+			if (!outcome->cancelled) {
+				auto message = to_wx(outcome->error);
+				message += "\n\n";
+				message += outcome->diagnostic_log_path.empty()
+					? _("The diagnostic log could not be saved in the log folder.")
+					: fmt_tl("Diagnostic log saved to:\n%s\n\n",
+						to_wx(outcome->diagnostic_log_path));
+				wxMessageBox(message, _("AI post-check failed"),
 					wxOK | wxICON_ERROR, this);
+			}
 			Fail(outcome->cancelled ? _("Request cancelled.") : _("The AI post-check failed."));
 			return;
 		}
